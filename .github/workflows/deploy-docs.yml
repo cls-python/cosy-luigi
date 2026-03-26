@@ -1,0 +1,47 @@
+name: Deploy Documentation
+
+on:
+  push:
+    tags:
+    - v*
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+
+concurrency:
+  group: deploy-docs
+  cancel-in-progress: true
+
+jobs:
+  pre-deploy-docs-checks:
+    uses: ./.github/workflows/check-docs.yml
+
+  deploy-docs:
+    needs: [pre-deploy-docs-checks]
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v6
+      with:
+        # Full history for timestamps
+        fetch-depth: 0
+
+    - name: Set up Python
+      uses: actions/setup-python@v6
+      with:
+        python-version: '3.12'
+
+    - name: Install Hatch
+      uses: pypa/hatch@install
+
+    - name: Display Version
+      run: hatch version
+
+    - name: Configure Git for Actions
+      run: |
+        git config --local user.name 'cls-python-workflows[bot]'
+        git config --local user.email '269699678+cls-python-workflows[bot]@users.noreply.github.com'
+
+    - name: Publish
+      run: hatch run docs:deploy

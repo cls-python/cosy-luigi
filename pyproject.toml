@@ -1,0 +1,103 @@
+[build-system]
+requires = ["hatchling", "hatch-vcs"]
+build-backend = "hatchling.build"
+
+
+[project]
+name = "cosy-luigi"
+dynamic = ["version"]
+description = 'Pipeline Synthesis Framework based on Finite Combinatory Logic with Predicates'
+readme = "README.md"
+requires-python = ">=3.10"
+license = "Apache-2.0"
+keywords = []
+authors = [
+  { name = "Constantin Chaumet", email = "constantin.chaumet@tu-dortmund.de" },
+]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: Implementation :: CPython",
+  "Programming Language :: Python :: Implementation :: PyPy",
+]
+dependencies = [
+    "combinatory-synthesizer==0.0.1.dev24",
+    "luigi==3.8.0"
+]
+
+
+[project.urls]
+Documentation = "https://github.com/cls-python/cosy-luigi#readme"
+Issues = "https://github.com/cls-python/cosy-luigi/issues"
+Source = "https://github.com/cls-python/cosy-luigi"
+
+
+[tool.hatch.version]
+source = "vcs"
+
+
+[tool.hatch.version.raw-options]
+local_scheme = "no-local-version"
+version_scheme = "guess-next-dev"
+
+
+[tool.hatch.build.hooks.vcs]
+version-file = "src/cosy_luigi/_version.py"
+
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/cosy_luigi"]
+
+
+[[tool.hatch.envs.hatch-test.matrix]]
+python = ["3.13", "3.12", "3.11", "3.10"]
+
+
+[tool.coverage.run]
+source_pkgs = ["cosy_luigi", "tests"]
+branch = true
+parallel = true
+omit = [
+  "src/cosy_luigi/__about__.py",
+  "src/cosy_luigi/_version.py",
+]
+
+
+[tool.coverage.paths]
+cosy-luigi = ["src/cosy_luigi", "*/cosy-luigi/src/cosy_luigi"]
+tests = ["tests", "*/cosy-luigi/tests"]
+
+
+[tool.coverage.report]
+exclude_lines = [
+  "no cov",
+  "if __name__ == .__main__.:",
+  "if TYPE_CHECKING:",
+  "@abstractmethod",
+  "@abc.abstractmethod"
+]
+
+
+[tool.ruff.lint.extend-per-file-ignores]
+"**/tests/**/*" = [
+  "FBT",
+]
+"**/examples/**/*" = [
+  "T201",
+  "INP001",
+  "FBT",
+]
+"**/benchmarks/**/*" = [
+  "PLC1901",
+  "PLR2004",
+  "PLR6301",
+  "S",
+  "TID252",
+  "FBT",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]

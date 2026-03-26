@@ -1,0 +1,26 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: CoSy-Luigi
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - given-names: Constantin
+    family-names: Chaumet
+    email: constantin.chaumet@tu-dortmund.de
+    affiliation: TU Dortmund University
+    orcid: 'https://orcid.org/0000-0002-8359-8030'
+  - given-names: Anne
+    family-names: Meyer
+    affiliation: Karlsruhe Institute of Technology
+    orcid: 'https://orcid.org/0000-0001-6380-1348'
+repository-code: 'https://github.com/cls-python/cosy-luigi'
+keywords:
+  - data-driven decision-making
+  - pipeline synthesis
+  - logistics
+  - automl
+license: Apache-2.0

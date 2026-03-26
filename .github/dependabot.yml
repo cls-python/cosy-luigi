@@ -1,0 +1,6 @@
+version: 2
+updates:
+  - package-ecosy-luigistem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"

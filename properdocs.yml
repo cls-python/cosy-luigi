@@ -1,0 +1,121 @@
+site_name: CoSy-Luigi
+site_description: Pipeline Synthesis
+site_author: Constantin Chaumet
+site_url: https://cls-python.github.io/cosy-luigi
+repo_name: cls-python/cosy-luigi
+repo_url: https://github.com/cls-python/cosy-luigi
+edit_uri: blob/main/docs
+copyright: 'Copyright &copy; <a href="https://github.com/Jekannadar">Constantin Chaumet</a>: 2025-present'
+
+docs_dir: docs
+site_dir: site
+extra_css:
+  - stylesheets/extra.css
+theme:
+  name: material
+  custom_dir: docs/.overrides
+  language: en
+  favicon: assets/images/logo.svg
+  icon:
+    repo: fontawesome/brands/github
+    logo: material/pipe-disconnected
+  font:
+    text: Roboto
+    code: Roboto Mono
+  palette:
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/lightbulb-outline
+        name: Switch to light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/lightbulb-off-outline
+        name: Switch to dark mode
+  features:
+    - content.code.copy
+    - content.code.annotate
+    - content.tabs.link
+    - content.tooltips
+    - navigation.expand
+    - navigation.footer
+    - navigation.instant
+    - navigation.sections
+    - navigation.tabs
+    - navigation.tabs.sticky
+
+nav:
+  - Home:
+    - About: index.md
+    - Getting Started: quick-start.md
+  - Examples: examples/
+  - Code Reference: reference/
+  - About:
+    - Authors: about/authors.md
+
+watch:
+- src/cosy_luigi
+- examples
+
+plugins:
+  search: {}
+  gen-files:
+    scripts:
+      - scripts/gen_reference_pages.py
+      - scripts/gen_example_pages.py
+  literate-nav:
+    nav_file: SUMMARY.md
+  minify:
+    minify_html: true
+  mkdocstrings:
+    default_handler: python
+    handlers:
+      python:
+        paths: [src, examples]
+        options:
+          show_root_heading: true
+          show_root_full_path: false
+          show_if_no_docstring: true
+          show_signature_annotations: true
+          show_bases: false
+  git-revision-date-localized:
+    type: date
+    strict: false
+  bibtex:
+    bib_dir: "docs/bibliographies"
+    csl_file: "docs/bibliographies/modern-language-association.csl"
+
+markdown_extensions:
+  - attr_list:
+  - admonition:
+  - tables:
+  - md_in_html:
+  - toc:
+        permalink: true
+  - pymdownx.details:
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.highlight:
+      use_pygments: true
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+      guess_lang: false
+      default_lang: cosy-luigi-py
+  - pymdownx.inlinehilite:
+      style_plain_text: cosy-luigi-py
+  - pymdownx.snippets:
+  - pymdownx.superfences:
+  - pymdownx.blocks.tab:
+      alternate_style: true
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/cls-python/cosy-luigi

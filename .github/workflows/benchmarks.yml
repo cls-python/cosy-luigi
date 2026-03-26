@@ -1,0 +1,94 @@
+name: Perform Benchmarks
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request_target:
+    branches:
+      - main
+      - develop
+
+
+concurrency:
+  group: benchmarks-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
+
+env:
+  PYTHONUNBUFFERED: "1"
+  FORCE_COLOR: "1"
+  BRANCH_NAME: ${{ github.base_ref || github.ref_name }}
+  PUSH_TO_BENCHMARKS: false
+  COMMENT_ALWAYS: true
+
+jobs:
+  benchmark-then-upload:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/create-github-app-token@v2
+      id: cls-python-workflow-token
+      with:
+        app-id: ${{ secrets.CLS_PYTHON_WORKFLOW_CLIENT_ID }}
+        private-key: ${{ secrets.CLS_PYTHON_WORKFLOW_PRIVATE_KEY }}
+        repositories: |
+          cosy-luigi
+          cosy-luigi-benchmarks    
+
+    - uses: actions/checkout@v6
+      with:
+        repository: cls-python/cosy-luigi-benchmarks
+        ref: 'gh-pages'
+
+    - uses: actions/checkout@v6
+      with:
+        # Full history for timestamps
+        fetch-depth: 0
+        path: 'cosy-luigi-nested'
+
+    - name: Set up Python
+      uses: actions/setup-python@v6
+      with:
+        python-version: '3.13'
+
+    - name: Install Hatch
+      uses: pypa/hatch@install
+
+    - name: Fetch PR branch from fork
+      if: ${{ github.event_name == 'pull_request' || github.event_name == 'pull_request_target' }}
+      run: gh pr checkout ${{ github.event.number }}
+      env:
+        GH_TOKEN: ${{ steps.cls-python-workflow-token.outputs.token }}
+      working-directory: 'cosy-luigi-nested'
+
+    - name: Run Benchmark Suite
+      run: hatch test benchmarks --benchmark-json benchmarks.json
+      working-directory: 'cosy-luigi-nested'
+
+    - name: Config Git
+      run: |
+        git config user.name "cls-python-workflows[bot]"
+        git config user.email "269699678+cls-python-workflows[bot]@users.noreply.github.com"
+
+    - name: Determine Push Or Not
+      if: github.event_name != 'pull_request'
+      run: |
+        echo "PUSH_TO_BENCHMARKS=true" >> $GITHUB_ENV
+        echo "COMMENT_ALWAYS=false" >> $GITHUB_ENV
+
+    - name: Store Benchmark Result
+      uses: benchmark-action/github-action-benchmark@v1
+      with:
+        name: Benchmark cosy-luigi
+        tool: 'pytest'
+        output-file-path: cosy-luigi-nested/benchmarks.json
+        github-token: ${{ steps.cls-python-workflow-token.outputs.token }}
+        auto-push: ${{ env.PUSH_TO_BENCHMARKS }}
+        alert-threshold: '300%'
+        comment-on-alert: true
+        fail-on-alert: true
+        comment-always: ${{ env.COMMENT_ALWAYS }}
+        summary-always: true
+        gh-repository: 'github.com/cls-python/cosy-luigi-benchmarks'
+        benchmark-data-dir-path: '${{ env.BRANCH_NAME }}/benchmarks'

@@ -1,0 +1,18 @@
+:root > * {
+    --md-primary-fg-color: #00876C;
+    --md-primary-fg-color--light: #00876C;
+    --md-primary-fg-color--dark: #00876C;
+    --md-accent-fg-color: #A7822E;
+    --md-accent-fg-color--light: #A7822E;
+    --md-accent-fg-color--dark: #A7822E;
+}
+
+.md-typeset__table {
+  width: 100%;
+}
+
+.md-typeset__table table:not([class]) {
+  display: table
+}
+
+code { font-family: 'JetBrains Mono', monospace; }

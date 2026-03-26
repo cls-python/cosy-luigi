@@ -1,0 +1,48 @@
+[envs.docs]
+dependencies = [
+  "properdocs",
+  "mkdocs-material",
+  "mkdocs-minify-plugin",
+  "mkdocstrings-python",
+  "mkdocs-gen-files",
+  "mkdocs-literate-nav",
+  "mkdocs-git-revision-date-localized-plugin",
+  "mkdocs-bibtex",
+  "pypandoc_binary",
+  "linkchecker",
+  "pygments",
+]
+packages = ["examples"]
+
+
+[envs.docs.env-vars]
+PROPERDOCS_CONFIG = "properdocs.yml"
+
+
+[envs.docs.scripts]
+build = "properdocs build --config-file {env:PROPERDOCS_CONFIG} --clean --strict {args}"
+validate = "linkchecker site"
+check = [
+  "build --no-directory-urls",
+  "validate",
+]
+serve = "properdocs serve --config-file {env:PROPERDOCS_CONFIG} --dev-addr localhost:8000 {args}"
+deploy = "properdocs gh-deploy --force --config-file {env:PROPERDOCS_CONFIG} --clean {args}"
+
+
+[envs.types]
+extra-dependencies = [
+  "mypy>=1.0.0",
+  "pytest>=8.0.0"
+]
+
+
+[envs.types.scripts]
+check = "mypy --install-types --non-interactive {args:src/cosy_luigi tests}"
+
+
+[envs.hatch-test]
+extra-dependencies = [
+  "pytest-benchmark",
+  "pytest-cov"
+]
