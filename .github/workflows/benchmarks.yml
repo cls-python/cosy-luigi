@@ -75,7 +75,6 @@ jobs:
       if: github.event_name != 'pull_request'
       run: |
         echo "PUSH_TO_BENCHMARKS=true" >> $GITHUB_ENV
-        echo "COMMENT_ALWAYS=false" >> $GITHUB_ENV
 
     - name: Store Benchmark Result
       uses: benchmark-action/github-action-benchmark@v1

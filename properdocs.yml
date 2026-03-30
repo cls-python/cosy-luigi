@@ -42,7 +42,6 @@ theme:
     - content.code.annotate
     - content.tabs.link
     - content.tooltips
-    - navigation.expand
     - navigation.footer
     - navigation.instant
     - navigation.sections
