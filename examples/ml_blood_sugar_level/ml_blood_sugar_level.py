@@ -1,4 +1,6 @@
 import json
+import textwrap
+from abc import ABC
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from pathlib import Path
 
@@ -28,7 +30,7 @@ class LoadDiabetesData(CoSyLuigiTask):
             data=np.c_[diabetes["data"], diabetes["target"]], columns=diabetes["feature_names"] + ["target"]
         )
 
-        df.to_json(self.output().path)
+        df.to_json(self.output()["diabetes_data"].path)
 
 
 class TrainTestSplit(CoSyLuigiTask):
@@ -43,18 +45,18 @@ class TrainTestSplit(CoSyLuigiTask):
         }
 
     def run(self):
-        data = pd.read_json(self.input()[0].path)
+        data = pd.read_json(self.input()["diabetes"]["diabetes_data"].path)
         x = data.drop(["target"], axis="columns")
         y = data[["target"]]
         x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.33, random_state=42)
 
-        x_train.to_json(self.output()[0].path)
-        x_test.to_json(self.output()[1].path)
-        y_train.to_json(self.output()[2].path)
-        y_test.to_json(self.output()[3].path)
+        x_train.to_json(self.output()["x_train"].path)
+        x_test.to_json(self.output()["x_test"].path)
+        y_train.to_json(self.output()["y_train"].path)
+        y_test.to_json(self.output()["y_test"].path)
 
 
-class FitTransformScaler(CoSyLuigiTask):
+class FitTransformScaler(CoSyLuigiTask, ABC):
     splitted_data = CoSyLuigiTaskParameter(TrainTestSplit)
 
 
@@ -63,7 +65,7 @@ class FitTransformMinMaxScaler(FitTransformScaler):
         return {
             "scaled_x_train": luigi.LocalTarget("minmax_scaled_x_train.json"),
             "scaled_x_test": luigi.LocalTarget("minmax_scaled_x_test.json"),
-            "scaler": luigi.LocalTarget("minmax_scaler.json"),
+            "scaler": luigi.LocalTarget("minmax_scaler.skops"),
         }
 
     def run(self):
@@ -80,7 +82,7 @@ class FitTransformMinMaxScaler(FitTransformScaler):
         scaled_x_test.to_json(self.output()["scaled_x_test"].path)
 
         with open(self.output()["scaler"].path, "wb") as outfile:
-            json.dump(scaler, outfile)
+            sio.dump(scaler, outfile)
 
 
 class FitTransformRobustScaler(FitTransformScaler):
@@ -107,7 +109,7 @@ class FitTransformRobustScaler(FitTransformScaler):
             json.dump(scaler, outfile)
 
 
-class TrainRegressionModel(CoSyLuigiTask):
+class TrainRegressionModel(CoSyLuigiTask, ABC):
     scaled_feats = CoSyLuigiTaskParameter(FitTransformScaler)
     splitted_data = CoSyLuigiTaskParameter(TrainTestSplit)
 
@@ -205,9 +207,16 @@ def main():
         EvaluateRegressionModel,
     )
     maestro = Maestro(repo.cls_repo, repo.taxonomy)
-    for result in maestro.query(EvaluateRegressionModel.target()):
-        # print(deps_tree.print_tree(result))
-        luigi.build([result], local_scheduler=True, detailed_summary=True)
+    results = list(maestro.query(EvaluateRegressionModel.target()))
+    luigi.build(results, local_scheduler=True, detailed_summary=True)
+    print(
+        textwrap.dedent(
+            f"""
+                ===============================================
+                    There are a total of {len(results)} results
+                ==============================================="""
+        )
+    )
 
 
 if __name__ == "__main__":
