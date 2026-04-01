@@ -4,7 +4,7 @@ import inspect
 from abc import ABC
 from collections import defaultdict
 from functools import cache
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast, TypeVarTuple
 
 import luigi
 from cosy.core import Constructor, SpecificationBuilder
@@ -93,28 +93,28 @@ class CoSyLuigiTask(luigi.Task):
 
 
 class CoSyLuigiRepo:
-    def __init__(self, *tasks: type[CoSyLuigiTask | Iterable[CoSyLuigiTask]]):
+    def __init__(self, *tasks: *tuple[type[CoSyLuigiTask] | Iterable[type[CoSyLuigiTask]], ...]):
         Register.disable_instance_cache()
 
         # Accepts completely heterogeneous nested collections
-        def flatten(*heterogeneous_task_collection: type[CoSyLuigiTask | Iterable[CoSyLuigiTask]]):
+        def flatten(*heterogeneous_task_collection: *tuple[type[CoSyLuigiTask] | Iterable[type[CoSyLuigiTask]], ...]):
             return (
                 task
                 for task_or_task_collection in heterogeneous_task_collection
                 for task in (
-                    flatten(*task_or_task_collection)
+                    flatten(*cast(Iterable[type[CoSyLuigiTask]],task_or_task_collection))
                     if isinstance(task_or_task_collection, (tuple, list))
-                    else task_or_task_collection.get_all_variants()
-                    if inspect.isabstract(task_or_task_collection) or ABC in task_or_task_collection.__bases__
+                    else cast(type[CoSyLuigiTask],task_or_task_collection).get_all_variants()
+                    if inspect.isabstract(task_or_task_collection) or ABC in cast(type[CoSyLuigiTask],task_or_task_collection).__bases__
                     else (task_or_task_collection,)
                 )
             )
-
-        self.luigi_repo: list[type[CoSyLuigiTask]] = list(flatten(tasks))
+        # TODO: Understand why I need to unpack here so that mypy is happy
+        self.luigi_repo: list[type[CoSyLuigiTask]] = list(flatten(*tasks))
         self.taxonomy: Mapping[str, set[str]] = defaultdict(set)
-        self.cls_repo: list[tuple[str, Callable, Specification]] = []
+        self.cls_repo: set[tuple[str, Callable, Specification]] = set()
         for task in self.luigi_repo:
-            self.cls_repo.append(task.combinator())
+            self.cls_repo.add(task.combinator())
             for tpe in task.mro()[1:]:
                 if issubclass(tpe, CoSyLuigiTask):
                     # Is a subclass of CosyLuigiTask, but a superclass of task
