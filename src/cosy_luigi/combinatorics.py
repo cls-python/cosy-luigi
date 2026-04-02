@@ -109,7 +109,8 @@ class CoSyLuigiRepo:
                     else (task_or_task_collection,)
                 )
             )
-        # TODO: Understand why I need to unpack here so that mypy is happy
+        # This doesn't technically need to unpack as flatten could be typed to accept packed tuples
+        # But performance is equivalent/faster because the first layer doesn't need to be checked this way
         self.luigi_repo: list[type[CoSyLuigiTask]] = list(flatten(*tasks))
         self.taxonomy: Mapping[str, set[str]] = defaultdict(set)
         self.cls_repo: set[tuple[str, Callable, Specification]] = set()
