@@ -10,6 +10,7 @@ class ABCInheritedTask(CoSyLuigiTask, ABC):
 class ConcreteTaskFromABCInherited(ABCInheritedTask):
     pass
 
+
 class DeeperConcreteTaskFromABCInherited(ConcreteTaskFromABCInherited):
     pass
 
@@ -25,6 +26,7 @@ class ConcreteTaskFromAbstract(AbstractTask):
     def do_nothing(self):
         pass
 
+
 class DeeperConcreteTaskFromAbstract(ConcreteTaskFromAbstract):
     def do_nothing(self):
         pass
@@ -36,6 +38,11 @@ def test_abstract_variant_expansion():
     repo = CoSyLuigiRepo(AbstractTask)
     assert repo.luigi_repo == {ConcreteTaskFromAbstract, DeeperConcreteTaskFromAbstract}
     repo = CoSyLuigiRepo(ABCInheritedTask, AbstractTask)
-    assert repo.luigi_repo == {ConcreteTaskFromABCInherited, DeeperConcreteTaskFromABCInherited, ConcreteTaskFromAbstract, DeeperConcreteTaskFromAbstract}
+    assert repo.luigi_repo == {
+        ConcreteTaskFromABCInherited,
+        DeeperConcreteTaskFromABCInherited,
+        ConcreteTaskFromAbstract,
+        DeeperConcreteTaskFromAbstract,
+    }
     repo = CoSyLuigiRepo(ConcreteTaskFromAbstract)
     assert repo.luigi_repo == {ConcreteTaskFromAbstract}
