@@ -495,3 +495,9 @@ report.xml
 
 # Auto-generated during builds
 /src/cosy_luigi/_version.py
+
+# Examples
+/examples/**/*.txt
+/examples/**/*.json
+/examples/**/*.csv
+/examples/**/*.skops

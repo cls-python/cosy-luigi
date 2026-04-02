@@ -1,5 +1,6 @@
 import json
 import os
+import textwrap
 from abc import ABC, abstractmethod
 from pathlib import Path
 
@@ -38,7 +39,7 @@ class GetHistoricDemand(CoSyLuigiTask):
             f.write("1, 5, 7, 8, 9, 10, 14, 16, 19, 21, 19, 23, 24, 26, 26, 26, 28, 26, 28, 30")
 
 
-class PredictDemand(CoSyLuigiTask):
+class PredictDemand(CoSyLuigiTask, ABC):
     get_historic_demand = CoSyLuigiTaskParameter(GetHistoricDemand)
     prediction_horizon = 8
     output_filename: str = ""
@@ -155,15 +156,18 @@ if __name__ == "__main__":
     repo = CoSyLuigiRepo(
         GetCosts,
         GetHistoricDemand,
-        PredictDemandByAverage,
-        PredictDemandByLinearRegression,
-        OptimizeLotsByLeastUnitCost,
-        OptimizeLotsByGroff,
-        OptimizeLotsByPartPeriod,
-        OptimizeLotsBySilverMeal,
-        OptimizeLotsByWagnerWhitin,
+        PredictDemand,
+        OptimizeLots,
     )
+    print(PredictDemand.get_all_variants())
     maestro = Maestro(repo.cls_repo, repo.taxonomy)
-    for result in maestro.query(OptimizeLots.target()):
-        # print(deps_tree.print_tree(result))
-        luigi.build([result], local_scheduler=True, detailed_summary=True)
+    results = list(maestro.query(OptimizeLots.target()))
+    luigi.build(results, local_scheduler=True, detailed_summary=True)
+    print(
+        textwrap.dedent(
+            f"""
+            ===============================================
+                There are a total of {len(results)} results
+            ==============================================="""
+        )
+    )

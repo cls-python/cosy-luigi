@@ -1,15 +1,17 @@
 from __future__ import annotations
 
+import inspect
+from abc import ABC
 from collections import defaultdict
 from functools import cache
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 import luigi
 from cosy.core import Constructor, SpecificationBuilder
 from luigi.task_register import Register
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Mapping, Sequence
+    from collections.abc import Callable, Iterable, Mapping, Sequence
 
     from cosy.core.synthesizer import Specification
 
@@ -24,6 +26,11 @@ class CoSyLuigiTask(luigi.Task):
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
         cls.self = cls
+
+    @classmethod
+    @cache
+    def get_all_variants(cls):
+        return set(cls.__subclasses__()).union([s for c in cls.__subclasses__() for s in c.get_all_variants()])
 
     @classmethod
     @cache
@@ -86,13 +93,31 @@ class CoSyLuigiTask(luigi.Task):
 
 
 class CoSyLuigiRepo:
-    def __init__(self, *tasks: type[CoSyLuigiTask]):
+    def __init__(self, *tasks: type[CoSyLuigiTask] | Iterable[type[CoSyLuigiTask]]):
         Register.disable_instance_cache()
-        self.luigi_repo: list[type[CoSyLuigiTask]] = [*tasks]
+
+        # Accepts completely heterogeneous nested collections
+        def flatten(*heterogeneous_task_collection: type[CoSyLuigiTask] | Iterable[type[CoSyLuigiTask]]):
+            return (
+                task
+                for task_or_task_collection in heterogeneous_task_collection
+                for task in (
+                    flatten(*cast("Iterable[type[CoSyLuigiTask]]", task_or_task_collection))
+                    if isinstance(task_or_task_collection, (tuple, list))
+                    else cast("type[CoSyLuigiTask]", task_or_task_collection).get_all_variants()
+                    if inspect.isabstract(task_or_task_collection)
+                    or ABC in cast("type[CoSyLuigiTask]", task_or_task_collection).__bases__
+                    else (task_or_task_collection,)
+                )
+            )
+
+        # This doesn't technically need to unpack as flatten could be typed to accept packed tuples
+        # But performance is equivalent/faster because the first layer doesn't need to be checked this way
+        self.luigi_repo: set[type[CoSyLuigiTask]] = set(flatten(*tasks))
         self.taxonomy: Mapping[str, set[str]] = defaultdict(set)
-        self.cls_repo: list[tuple[str, Callable, Specification]] = []
+        self.cls_repo: set[tuple[str, Callable, Specification]] = set()
         for task in self.luigi_repo:
-            self.cls_repo.append(task.combinator())
+            self.cls_repo.add(task.combinator())
             for tpe in task.mro()[1:]:
                 if issubclass(tpe, CoSyLuigiTask):
                     # Is a subclass of CosyLuigiTask, but a superclass of task

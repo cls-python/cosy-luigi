@@ -42,6 +42,16 @@ pip install https://github.com/cls-python/cosy-luigi/releases/download/nightly/c
 ## Documentation
 Please head over to the [documentation](https://cls-python.github.io/cosy-luigi/) to [get started](https://cls-python.github.io/cosy-luigi/quick-start/). 
 
+## Contributing
+Please contribute via a fork if not part of the cls-python org, and contribute via a `feature/` or `bugfix/` branch if you are part of the org. 
+
+Before making a PR:
+- For code, please run `hatch fmt` and `hatch run types:check` to make sure you meet code quality standards. 
+- For docs, please run `hatch run docs:check` to make sure that everything is in order. 
+
+These are run as part of the PR, so if these do not pass for you locally, the PR is guaranteed not to be mergeable. 
+
+ 
 ## License
 
 `cosy-luigi` is distributed under the terms of the [Apache-2.0](https://spdx.org/licenses/Apache-2.0.html) license.
