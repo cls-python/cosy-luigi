@@ -1,3 +1,5 @@
+from abc import ABC
+
 import pytest
 from cosy.maestro import Maestro
 from luigi.mock import MockTarget
@@ -5,7 +7,7 @@ from luigi.mock import MockTarget
 from cosy_luigi.combinatorics import CoSyLuigiRepo, CoSyLuigiTask, CoSyLuigiTaskParameter
 
 
-class ChainLink(CoSyLuigiTask):
+class ChainLink(CoSyLuigiTask, ABC):
     chain_link: CoSyLuigiTaskParameter | None
 
     def output(self):
@@ -35,7 +37,7 @@ class FinalLink(CoSyLuigiTask):
 
 @pytest.fixture
 def repo():
-    return CoSyLuigiRepo(StartingLink, RepeatingLink, FinalLink)
+    return CoSyLuigiRepo(ChainLink, FinalLink)
 
 
 def create_infinite_chain(repo):
