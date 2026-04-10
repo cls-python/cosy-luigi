@@ -1,4 +1,5 @@
-from cosy_luigi.combinatorics import CoSyLuigiRepo, CoSyLuigiTask
+from cosy_luigi import CoSyLuigiRepo, CoSyLuigiTask
+from cosy_luigi.utils import flatten
 
 
 class TaskA(CoSyLuigiTask):
@@ -48,3 +49,5 @@ class TaskK(CoSyLuigiTask):
 def test_heterogeneous_repo_input():
     repo = CoSyLuigiRepo(TaskA, [TaskB, TaskC], (TaskD, TaskE), [TaskF, (TaskG, TaskH)], (TaskI, [TaskJ, TaskK]))
     assert repo.luigi_repo == {TaskA, TaskB, TaskC, TaskD, TaskE, TaskF, TaskG, TaskH, TaskI, TaskJ, TaskK}
+    flattened_collection = set(flatten(TaskA, [TaskB, TaskC], (TaskD, TaskE), [TaskF, (TaskG, TaskH)], (TaskI, [TaskJ, TaskK])))
+    assert flattened_collection == {TaskA, TaskB, TaskC, TaskD, TaskE, TaskF, TaskG, TaskH, TaskI, TaskJ, TaskK}

@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from cosy_luigi.combinatorics import CoSyLuigiRepo, CoSyLuigiTask
+from cosy_luigi import CoSyLuigiRepo, CoSyLuigiTask
 
 
 class ABCInheritedTask(CoSyLuigiTask, ABC):
