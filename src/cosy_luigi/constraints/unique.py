@@ -1,19 +1,21 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from collections.abc import Iterable
+from typing import TYPE_CHECKING, cast
 
-from cosy_luigi import CoSyLuigiTask
 from cosy_luigi.utils import traverse_pipeline
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Mapping
+    from collections.abc import Mapping
+
+    from cosy_luigi import CoSyLuigiTask
 
 
 def _is_unique_in_prior_tasks(
     vs: Mapping[str, CoSyLuigiTask], required_to_be_unique: Iterable[type[CoSyLuigiTask]]
 ) -> bool:
     classes = [pc.__class__ for pc in traverse_pipeline(vs.values())]
-    seen_subclasses = {}
+    seen_subclasses: dict[type[CoSyLuigiTask], type[CoSyLuigiTask]] = {}
     for c in classes:
         for unique in required_to_be_unique:
             if issubclass(c, unique):
@@ -29,5 +31,8 @@ def is_unique_in_prior_tasks(
     vs: Mapping[str, CoSyLuigiTask], required_to_be_unique: type[CoSyLuigiTask] | Iterable[type[CoSyLuigiTask]]
 ) -> bool:
     return _is_unique_in_prior_tasks(
-        vs, [required_to_be_unique] if isinstance(required_to_be_unique, CoSyLuigiTask) else required_to_be_unique
+        vs,
+        required_to_be_unique
+        if isinstance(required_to_be_unique, Iterable)
+        else [required_to_be_unique],
     )
