@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import textwrap
 from collections import defaultdict
 from functools import cache, partial
@@ -13,6 +14,8 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Mapping, Sequence
 
     from cosy.core.synthesizer import Specification
+
+logger = logging.getLogger(__name__)
 
 
 class CoSyLuigiTaskParameter(luigi.TaskParameter):
@@ -70,7 +73,11 @@ class CoSyLuigiTask(luigi.Task):
     @classmethod
     @cache
     def requirements_unique_in_prior_tasks(cls) -> Mapping[str, CoSyLuigiTaskParameter]:
-        return {k: task_parameter for k, task_parameter in cls._requirements().items() if task_parameter.unique_across_prior_tasks}
+        return {
+            k: task_parameter
+            for k, task_parameter in cls._requirements().items()
+            if task_parameter.unique_across_prior_tasks
+        }
 
     @classmethod
     @cache
@@ -89,6 +96,7 @@ class CoSyLuigiTask(luigi.Task):
     @classmethod
     def __constraints(cls) -> Sequence[Callable[..., bool]]:
         from cosy_luigi.constraints.unique import _is_unique_in_prior_tasks  # noqa: PLC0415
+
         return [partial(_is_unique_in_prior_tasks, required_to_be_unique=cls.unique_required_tasks_in_prior())]
 
     @classmethod
@@ -115,10 +123,10 @@ class CoSyLuigiRepo:
 
         # Accepts completely heterogeneous nested collections
 
-
         # This doesn't technically need to unpack as flatten could be typed to accept packed tuples
         # But performance is equivalent/faster because the first layer doesn't need to be checked this way
         from cosy_luigi.utils import flatten  # noqa: PLC0415
+
         self.luigi_repo: set[type[CoSyLuigiTask]] = set(flatten(*tasks))
         self.check_unique_in_prior_tasks_sanity()
         self.taxonomy: Mapping[str, set[str]] = defaultdict(set)
@@ -131,23 +139,32 @@ class CoSyLuigiRepo:
                     self.taxonomy[task.__name__].add(tpe.__name__)
 
     def check_unique_in_prior_tasks_sanity(self):
-        for source_task, param_name, required_type in [(task, k,required_unique_task.required_task) for task in self.luigi_repo for k, required_unique_task in task.requirements_unique_in_prior_tasks().items() if not any(issubclass(task, required_unique_task.required_task) and task is not required_unique_task.required_task for task in self.luigi_repo)]:
-            print(
+        for source_task, param_name, required_type in [
+            (task, k, required_unique_task.required_task)
+            for task in self.luigi_repo
+            for k, required_unique_task in task.requirements_unique_in_prior_tasks().items()
+            if not any(
+                issubclass(task, required_unique_task.required_task) and task is not required_unique_task.required_task
+                for task in self.luigi_repo
+            )
+        ]:
+            logger.warning(
                 textwrap.dedent(
                     f"""
                         =================================================================
-                            WARNING
-                            
+                            WARNING ABOUT POTENTIALLY INCORRECT MODEL
+
                             Class:      {source_task.__name__}
-                            Parameter:  {param_name} 
+                            Parameter:  {param_name}
                             Type:       {required_type.__name__}
-                            
+
                                         is required to be unique, but there are no sub-
                                         classes of it present in the repository. Either
                                         you forgot adding sub-classes of it to the rep-
-                                        ository or this will not behave as expected. 
-                                        
-                                        Please head over to the documentation: 
-                        ================================================================="""
+                                        ository or this will not behave as expected.
+
+                                        Please head over to the documentation:
+                        =================================================================
+                    """
                 )
             )

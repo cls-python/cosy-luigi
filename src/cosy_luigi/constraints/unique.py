@@ -9,7 +9,9 @@ if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping
 
 
-def _is_unique_in_prior_tasks(vs: Mapping[str, CoSyLuigiTask], required_to_be_unique: Iterable[type[CoSyLuigiTask]]) -> bool:
+def _is_unique_in_prior_tasks(
+    vs: Mapping[str, CoSyLuigiTask], required_to_be_unique: Iterable[type[CoSyLuigiTask]]
+) -> bool:
     classes = [pc.__class__ for pc in traverse_pipeline(vs.values())]
     seen_subclasses = {}
     for c in classes:
@@ -23,6 +25,9 @@ def _is_unique_in_prior_tasks(vs: Mapping[str, CoSyLuigiTask], required_to_be_un
     return True
 
 
-def is_unique_in_prior_tasks(vs: Mapping[str, CoSyLuigiTask],
-                             required_to_be_unique: type[CoSyLuigiTask] | Iterable[type[CoSyLuigiTask]]) -> bool:
-    return _is_unique_in_prior_tasks(vs, [required_to_be_unique] if isinstance(required_to_be_unique, CoSyLuigiTask) else required_to_be_unique)
+def is_unique_in_prior_tasks(
+    vs: Mapping[str, CoSyLuigiTask], required_to_be_unique: type[CoSyLuigiTask] | Iterable[type[CoSyLuigiTask]]
+) -> bool:
+    return _is_unique_in_prior_tasks(
+        vs, [required_to_be_unique] if isinstance(required_to_be_unique, CoSyLuigiTask) else required_to_be_unique
+    )

@@ -170,10 +170,6 @@ class EvaluateRegressionModel(CoSyLuigiTask):
         y_pred.to_json(self.output().path)
 
 
-
-
-
-
 def main():
     repo = CoSyLuigiRepo(
         TrainTestSplit,
