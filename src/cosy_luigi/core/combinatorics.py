@@ -101,6 +101,7 @@ class CoSyLuigiTask(luigi.Task):
     @classmethod
     def __constraints(cls) -> Sequence[Callable[..., bool]]:
         from cosy_luigi.constraints.unique import _is_unique_in_prior_tasks  # noqa: PLC0415
+
         if cls.requirements_unique_in_prior_tasks():
             return [partial(_is_unique_in_prior_tasks, required_to_be_unique=cls.unique_required_tasks_in_prior())]
         return []
