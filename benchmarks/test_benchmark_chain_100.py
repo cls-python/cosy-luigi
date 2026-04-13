@@ -4,7 +4,7 @@ import pytest
 from cosy.maestro import Maestro
 from luigi.mock import MockTarget
 
-from cosy_luigi.combinatorics import CoSyLuigiRepo, CoSyLuigiTask, CoSyLuigiTaskParameter
+from cosy_luigi import CoSyLuigiRepo, CoSyLuigiTask, CoSyLuigiTaskParameter
 
 
 class ChainLink(CoSyLuigiTask, ABC):
