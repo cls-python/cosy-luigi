@@ -6,6 +6,7 @@ from cosy_luigi import CoSyLuigiRepo, CoSyLuigiTask
 class ABCInheritedTaskWithNoInheritors(CoSyLuigiTask, ABC):
     pass
 
+
 class ABCInheritedTask(CoSyLuigiTask, ABC):
     pass
 
@@ -16,7 +17,6 @@ class ConcreteTaskFromABCInherited(ABCInheritedTask):
 
 class DeeperConcreteTaskFromABCInherited(ConcreteTaskFromABCInherited):
     pass
-
 
 
 # noinspection PyAbstractClass
@@ -47,11 +47,13 @@ def test_expansion_from_abc():
     repo = CoSyLuigiRepo(ABCInheritedTask)
     assert repo.luigi_repo == {ConcreteTaskFromABCInherited, DeeperConcreteTaskFromABCInherited}
 
+
 def test_expansion_from_abstract():
     repo = CoSyLuigiRepo(AbstractTask)
     assert ConcreteTaskFromAbstract().get_class_name() == "ConcreteTaskFromAbstract"
     assert DeeperConcreteTaskFromAbstract().get_class_name() == "DeeperConcreteTaskFromAbstract"
     assert repo.luigi_repo == {ConcreteTaskFromAbstract, DeeperConcreteTaskFromAbstract}
+
 
 def test_expansion_from_abc_and_abstract():
     repo = CoSyLuigiRepo(ABCInheritedTask, AbstractTask)
@@ -62,17 +64,21 @@ def test_expansion_from_abc_and_abstract():
         DeeperConcreteTaskFromAbstract,
     }
 
+
 def test_implementation_of_abstract_does_not_expand():
     repo = CoSyLuigiRepo(ConcreteTaskFromAbstract)
     assert repo.luigi_repo == {ConcreteTaskFromAbstract}
+
 
 def test_implementation_of_abc_does_not_expand():
     repo = CoSyLuigiRepo(ConcreteTaskFromABCInherited)
     assert repo.luigi_repo == {ConcreteTaskFromABCInherited}
 
+
 def test_expansion_to_nothing_from_abc_with_no_inheritors():
     repo = CoSyLuigiRepo(ABCInheritedTaskWithNoInheritors)
     assert repo.luigi_repo == set()
+
 
 def test_expansion_to_nothing_from_abstract_with_no_inheritors():
     repo = CoSyLuigiRepo(AbstractTaskWithNoInheritors)

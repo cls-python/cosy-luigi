@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING
 
 from cosy_luigi.utils import traverse_pipeline
 
@@ -32,7 +32,5 @@ def is_unique_in_prior_tasks(
 ) -> bool:
     return _is_unique_in_prior_tasks(
         vs,
-        required_to_be_unique
-        if isinstance(required_to_be_unique, Iterable)
-        else [required_to_be_unique],
+        required_to_be_unique if isinstance(required_to_be_unique, Iterable) else [required_to_be_unique],
     )
