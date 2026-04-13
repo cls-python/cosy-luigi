@@ -11,7 +11,7 @@ from cosy.core import Constructor, SpecificationBuilder
 from luigi.task_register import Register
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterable, Mapping, Sequence
+    from collections.abc import Callable, Mapping, Sequence
 
     from cosy.core.synthesizer import Specification
 
@@ -26,10 +26,6 @@ class CoSyLuigiTaskParameter(luigi.TaskParameter):
 
 
 class CoSyLuigiTask(luigi.Task):
-    def __init_subclass__(cls, **kwargs):
-        super().__init_subclass__(**kwargs)
-        cls.self = cls
-
     @classmethod
     @cache
     def get_all_variants(cls):
@@ -56,32 +52,35 @@ class CoSyLuigiTask(luigi.Task):
         :return: A list of other tasks required to run this task
         """
         return {
-            k: v
+            k: v.required_task()
             for k, v in self.get_all_instance_attributes().items()
-            if not k.startswith("__") and not callable(v) and issubclass(v.__class__, CoSyLuigiTask)
-        }
-
-    @classmethod
-    @cache
-    def _requirements(cls) -> Mapping[str, CoSyLuigiTaskParameter]:
-        return {
-            k: v
-            for k, v in cls.get_all_class_attributes().items()
             if not k.startswith("__") and not callable(v) and issubclass(v.__class__, CoSyLuigiTaskParameter)
         }
 
     @classmethod
     @cache
+    def _requirements(cls) -> Sequence[tuple[str, CoSyLuigiTaskParameter]]:
+        return [
+            (k, v)
+            for k, v in cls.get_all_class_attributes().items()
+            if not k.startswith("__") and not callable(v) and issubclass(v.__class__, CoSyLuigiTaskParameter)
+        ]
+
+    @classmethod
+    @cache
+    def get_params(cls):
+        return cls._requirements()
+
+    @classmethod
+    @cache
     def requirements_unique_in_prior_tasks(cls) -> Mapping[str, CoSyLuigiTaskParameter]:
         return {
-            k: task_parameter
-            for k, task_parameter in cls._requirements().items()
-            if task_parameter.unique_across_prior_tasks
+            k: task_parameter for k, task_parameter in cls._requirements() if task_parameter.unique_across_prior_tasks
         }
 
     @classmethod
     @cache
-    def unique_required_tasks_in_prior(cls) -> Iterable[type[CoSyLuigiTask]]:
+    def unique_required_tasks_in_prior(cls) -> Sequence[type[CoSyLuigiTask]]:
         return [task_parameter.required_task for task_parameter in cls.requirements_unique_in_prior_tasks().values()]
 
     @classmethod
@@ -102,8 +101,8 @@ class CoSyLuigiTask(luigi.Task):
     @classmethod
     def combinator_type(cls):
         sp = SpecificationBuilder()
-        for name in [v.required_task.__name__ for v in cls._requirements().values()]:
-            sp = sp.argument(name, Constructor(name))
+        for name, type_name in [(k, v.required_task.__name__) for k, v in cls._requirements()]:
+            sp = sp.argument(name, Constructor(type_name))
         for constraint in cls.__constraints():
             sp = sp.constraint(constraint)
         for constraint in cls.constraints():
@@ -114,11 +113,15 @@ class CoSyLuigiTask(luigi.Task):
     def combinator(cls):
         if len(cls._requirements()) == 0:
             return cls.__name__, lambda: cls(), cls.combinator_type()
-        return cls.__name__, lambda *args: cls(*args), cls.combinator_type()
+        return (
+            cls.__name__,
+            lambda *vals: cls(**dict(zip([k for k, _ in cls._requirements()], vals, strict=False))),
+            cls.combinator_type(),
+        )
 
 
 class CoSyLuigiRepo:
-    def __init__(self, *tasks: type[CoSyLuigiTask] | Iterable[type[CoSyLuigiTask]]):
+    def __init__(self, *tasks: type[CoSyLuigiTask] | Sequence[type[CoSyLuigiTask]]):
         Register.disable_instance_cache()
 
         # Accepts completely heterogeneous nested collections

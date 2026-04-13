@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Iterable
+from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
 from cosy_luigi.utils import traverse_pipeline
@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 
 
 def _is_unique_in_prior_tasks(
-    vs: Mapping[str, CoSyLuigiTask], required_to_be_unique: Iterable[type[CoSyLuigiTask]]
+    vs: Mapping[str, CoSyLuigiTask], required_to_be_unique: Sequence[type[CoSyLuigiTask]]
 ) -> bool:
     classes = [pc.__class__ for pc in traverse_pipeline(vs.values())]
     seen_subclasses: dict[type[CoSyLuigiTask], type[CoSyLuigiTask]] = {}
@@ -28,9 +28,9 @@ def _is_unique_in_prior_tasks(
 
 
 def is_unique_in_prior_tasks(
-    vs: Mapping[str, CoSyLuigiTask], required_to_be_unique: type[CoSyLuigiTask] | Iterable[type[CoSyLuigiTask]]
+    vs: Mapping[str, CoSyLuigiTask], required_to_be_unique: type[CoSyLuigiTask] | Sequence[type[CoSyLuigiTask]]
 ) -> bool:
     return _is_unique_in_prior_tasks(
         vs,
-        required_to_be_unique if isinstance(required_to_be_unique, Iterable) else [required_to_be_unique],
+        required_to_be_unique if isinstance(required_to_be_unique, Sequence) else [required_to_be_unique],
     )
