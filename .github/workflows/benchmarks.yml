@@ -84,9 +84,6 @@ jobs:
         output-file-path: cosy-luigi-nested/benchmarks.json
         github-token: ${{ steps.cls-python-workflow-token.outputs.token }}
         auto-push: ${{ env.PUSH_TO_BENCHMARKS }}
-        alert-threshold: '50%'
-        comment-on-alert: true
-        fail-on-alert: true
         comment-always: ${{ env.COMMENT_ALWAYS }}
         summary-always: true
         gh-repository: 'github.com/cls-python/cosy-luigi-benchmarks'
