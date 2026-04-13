@@ -145,7 +145,7 @@ class TrainLassoLarsModel(TrainRegressionModel):
 
 class EvaluateRegressionModel(CoSyLuigiTask):
     regressor = CoSyLuigiTaskParameter(TrainRegressionModel)
-    scaled_feats = CoSyLuigiTaskParameter(FitTransformMinMaxScaler, unique_across_prior_tasks=True)
+    scaled_feats = CoSyLuigiTaskParameter(FitTransformScaler, unique_across_prior_tasks=True)
     splitted_data = CoSyLuigiTaskParameter(TrainTestSplit)
 
     def _get_variant_label(self):
