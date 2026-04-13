@@ -3,7 +3,7 @@ import textwrap
 import luigi
 from cosy.maestro import Maestro
 
-from src.cosy_luigi.combinatorics import CoSyLuigiRepo, CoSyLuigiTask, CoSyLuigiTaskParameter
+from cosy_luigi import CoSyLuigiRepo, CoSyLuigiTask, CoSyLuigiTaskParameter
 
 
 class TaskA(CoSyLuigiTask):

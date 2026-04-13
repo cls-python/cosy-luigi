@@ -1,7 +1,6 @@
 import json
 import textwrap
 from abc import ABC
-from collections.abc import Callable, Iterable, Mapping, Sequence
 from pathlib import Path
 
 import luigi
@@ -15,7 +14,7 @@ from sklearn.metrics import root_mean_squared_error
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler, RobustScaler
 
-from cosy_luigi.combinatorics import CoSyLuigiRepo, CoSyLuigiTask, CoSyLuigiTaskParameter
+from cosy_luigi import CoSyLuigiRepo, CoSyLuigiTask, CoSyLuigiTaskParameter
 
 ninetydegaisle = True
 
@@ -146,7 +145,7 @@ class TrainLassoLarsModel(TrainRegressionModel):
 
 class EvaluateRegressionModel(CoSyLuigiTask):
     regressor = CoSyLuigiTaskParameter(TrainRegressionModel)
-    scaled_feats = CoSyLuigiTaskParameter(FitTransformScaler)
+    scaled_feats = CoSyLuigiTaskParameter(FitTransformScaler, unique_across_prior_tasks=True)
     splitted_data = CoSyLuigiTaskParameter(TrainTestSplit)
 
     def _get_variant_label(self):
@@ -169,31 +168,6 @@ class EvaluateRegressionModel(CoSyLuigiTask):
         print(f"RMSE: {rmse}")
 
         y_pred.to_json(self.output().path)
-
-    @classmethod
-    def constraints(cls) -> Sequence[Callable[..., bool]]:
-        return [lambda vs: check_unique(vs, [FitTransformScaler]), lambda _: ninetydegaisle]
-
-
-def traverse_pipeline(vs: Iterable[CoSyLuigiTask]) -> Iterable[CoSyLuigiTask]:
-    result = [*vs]
-    for v in result:
-        result.extend(traverse_pipeline(v.requires().values()))
-    return result
-
-
-def check_unique(vs: Mapping[str, CoSyLuigiTask], required_to_be_unique: Iterable[type[CoSyLuigiTask]]) -> bool:
-    classes = [pc.__class__ for pc in traverse_pipeline(vs.values())]
-    seen_subclasses = {}
-    for c in classes:
-        for unique in required_to_be_unique:
-            if issubclass(c, unique):
-                if unique in seen_subclasses:
-                    if seen_subclasses[unique] != c:
-                        return False
-                else:
-                    seen_subclasses[unique] = c
-    return True
 
 
 def main():

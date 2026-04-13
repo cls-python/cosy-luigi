@@ -4,7 +4,7 @@ import pytest
 from cosy.maestro import Maestro
 from luigi.mock import MockTarget
 
-from cosy_luigi.combinatorics import CoSyLuigiRepo, CoSyLuigiTask, CoSyLuigiTaskParameter
+from cosy_luigi import CoSyLuigiRepo, CoSyLuigiTask, CoSyLuigiTaskParameter
 
 
 class ChainLink(CoSyLuigiTask, ABC):
@@ -50,3 +50,7 @@ def create_infinite_chain(repo):
 
 def test_benchmark_chain_creation(repo, benchmark):
     benchmark(create_infinite_chain, repo)
+
+
+if __name__ == "__main__":
+    create_infinite_chain(repo)

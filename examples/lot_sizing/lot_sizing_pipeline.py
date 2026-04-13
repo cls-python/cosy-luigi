@@ -13,7 +13,7 @@ from lot_optimizers.part_period_heuristic import PartPeriod
 from lot_optimizers.silver_meal_heuristic import SilverMeal
 from lot_optimizers.wagner_whitin import WagnerWhitin
 
-from cosy_luigi.combinatorics import CoSyLuigiRepo, CoSyLuigiTask, CoSyLuigiTaskParameter
+from cosy_luigi import CoSyLuigiRepo, CoSyLuigiTask, CoSyLuigiTaskParameter
 
 
 class GetCosts(CoSyLuigiTask):
