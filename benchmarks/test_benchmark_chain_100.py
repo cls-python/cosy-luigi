@@ -50,3 +50,6 @@ def create_infinite_chain(repo):
 
 def test_benchmark_chain_creation(repo, benchmark):
     benchmark(create_infinite_chain, repo)
+
+if __name__ == "__main__":
+    create_infinite_chain(repo)
