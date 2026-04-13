@@ -130,9 +130,9 @@ class CoSyLuigiRepo:
         self.luigi_repo: set[type[CoSyLuigiTask]] = set(flatten(*tasks))
         self.check_unique_in_prior_tasks_sanity()
         self.taxonomy: Mapping[str, set[str]] = defaultdict(set)
-        self.cls_repo: set[tuple[str, Callable, Specification]] = set()
+        self.cls_repo: list[tuple[str, Callable, Specification]] = []
         for task in self.luigi_repo:
-            self.cls_repo.add(task.combinator())
+            self.cls_repo.append(task.combinator())
             for tpe in task.mro()[1:]:
                 if issubclass(tpe, CoSyLuigiTask):
                     # Is a subclass of CosyLuigiTask, but a superclass of task

@@ -76,9 +76,12 @@ exclude_lines = [
   "no cov",
   "if __name__ == .__main__.:",
   "if TYPE_CHECKING:",
-  "@abstractmethod",
-  "@abc.abstractmethod"
 ]
+exclude_also = [
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "@(abc\\.)?abstractmethod",
+    ]
 
 
 [tool.ruff.lint.extend-per-file-ignores]
