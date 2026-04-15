@@ -62,28 +62,28 @@ class EvaluatePipeline(CoSyLuigiTask):
 
 
 @pytest.fixture
-def repo_without_constraints():
+def repo_without_constraints() -> CoSyLuigiRepo:
     return CoSyLuigiRepo(TrainModel, ScaleDataABC, EvaluatePipeline)
 
 
 @pytest.fixture
-def repo_with_constraints():
+def repo_with_constraints() -> CoSyLuigiRepo:
     return CoSyLuigiRepo(TrainModel, ScaleDataABC, EvaluatePipelineWithUniqueScaler)
 
 
 @pytest.fixture
-def repo_with_manual_constraints():
+def repo_with_manual_constraints() -> CoSyLuigiRepo:
     return CoSyLuigiRepo(TrainModel, ScaleDataABC, EvaluatePipelineWithConstraintUniqueScaler)
 
 
 @pytest.fixture
-def repo_with_non_abstract_super():
+def repo_with_non_abstract_super() -> CoSyLuigiRepo:
     return CoSyLuigiRepo(
         TrainModel, ScaleData, ScaleDataVariantA, ScaleDataVariantB, EvaluatePipelineWithUniqueScalerAndNonAbstractSuper
     )
 
 
-def test_implementation_is_not_unique_across_prior_tasks(repo_without_constraints):
+def test_implementation_is_not_unique_across_prior_tasks(repo_without_constraints: CoSyLuigiRepo):
     maestro = Maestro(
         repo_without_constraints.cls_repo,
         repo_without_constraints.taxonomy,
@@ -92,7 +92,7 @@ def test_implementation_is_not_unique_across_prior_tasks(repo_without_constraint
     assert len(results) == 18
 
 
-def test_implementation_is_unique_across_prior_tasks(repo_with_constraints):
+def test_implementation_is_unique_across_prior_tasks(repo_with_constraints: CoSyLuigiRepo):
     maestro = Maestro(
         repo_with_constraints.cls_repo,
         repo_with_constraints.taxonomy,
@@ -103,7 +103,9 @@ def test_implementation_is_unique_across_prior_tasks(repo_with_constraints):
         assert result.scaled_data == result.train_model.scaled_data
 
 
-def test_implementation_is_unique_across_prior_tasks_with_manual_constraint(repo_with_manual_constraints):
+def test_implementation_is_unique_across_prior_tasks_with_manual_constraint(
+    repo_with_manual_constraints: CoSyLuigiRepo,
+):
     maestro = Maestro(
         repo_with_manual_constraints.cls_repo,
         repo_with_manual_constraints.taxonomy,
@@ -116,7 +118,9 @@ def test_implementation_is_unique_across_prior_tasks_with_manual_constraint(repo
         assert result.scaled_data == result.train_model.scaled_data
 
 
-def test_implementation_is_unique_across_prior_tasks_with_non_abstract_super(repo_with_non_abstract_super):
+def test_implementation_is_unique_across_prior_tasks_with_non_abstract_super(
+    repo_with_non_abstract_super: CoSyLuigiRepo,
+):
     maestro = Maestro(
         repo_with_non_abstract_super.cls_repo,
         repo_with_non_abstract_super.taxonomy,
