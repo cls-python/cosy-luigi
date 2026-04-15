@@ -1,4 +1,3 @@
-import json
 import textwrap
 from abc import ABC
 from pathlib import Path
@@ -8,8 +7,9 @@ import numpy as np
 import pandas as pd
 import skops.io as sio
 from cosy.maestro import Maestro
+from sklearn.base import RegressorMixin
 from sklearn.datasets import load_diabetes
-from sklearn.linear_model import LassoLars, LinearRegression
+from sklearn.linear_model import LassoLars
 from sklearn.metrics import root_mean_squared_error
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler, RobustScaler
@@ -57,82 +57,67 @@ class TrainTestSplit(CoSyLuigiTask):
 
 class FitTransformScaler(CoSyLuigiTask, ABC):
     splitted_data = CoSyLuigiTaskParameter(TrainTestSplit)
+    scaler_name: str
+    scaler: MinMaxScaler | RobustScaler
+
+    def output(self):
+        return {
+            "scaled_x_train": luigi.LocalTarget(f"{self.scaler_name}_scaled_x_train.json"),
+            "scaled_x_test": luigi.LocalTarget(f"{self.scaler_name}_scaled_x_test.json"),
+            "scaler": luigi.LocalTarget(f"{self.scaler_name}_scaler.skops"),
+        }
+
+    def scale(self, data_identifier: str):
+        x = pd.read_json(self.input()["splitted_data"][data_identifier].path)
+        self.scaler.fit(x)
+        x_train = pd.DataFrame(self.scaler.transform(x), columns=self.scaler.feature_names_in_, index=x.index)
+        x_train.to_json(self.output()[f"scaled_{data_identifier}"].path)
+
+    def run(self):
+        self.scale("x_train")
+        self.scale("x_test")
+
+        with open(self.output()["scaler"].path, "wb") as outfile:
+            sio.dump(self.scaler, outfile)
 
 
 class FitTransformMinMaxScaler(FitTransformScaler):
-    def output(self):
-        return {
-            "scaled_x_train": luigi.LocalTarget("minmax_scaled_x_train.json"),
-            "scaled_x_test": luigi.LocalTarget("minmax_scaled_x_test.json"),
-            "scaler": luigi.LocalTarget("minmax_scaler.skops"),
-        }
-
-    def run(self):
-        print(self.input())
-        x_train = pd.read_json(self.input()["splitted_data"]["x_train"].path)
-        scaler = MinMaxScaler()
-        scaler.fit(x_train)
-        scaled_x_train = pd.DataFrame(scaler.transform(x_train), columns=scaler.feature_names_in_, index=x_train.index)
-        scaled_x_train.to_json(self.output()["scaled_x_train"].path)
-
-        x_test = pd.read_json(self.input()["splitted_data"]["x_test"].path)
-        scaler.transform(x_test)
-        scaled_x_test = pd.DataFrame(scaler.transform(x_test), columns=scaler.feature_names_in_, index=x_test.index)
-        scaled_x_test.to_json(self.output()["scaled_x_test"].path)
-
-        with open(self.output()["scaler"].path, "wb") as outfile:
-            sio.dump(scaler, outfile)
+    scaler_name = "minmax"
+    scaler = MinMaxScaler()
 
 
 class FitTransformRobustScaler(FitTransformScaler):
-    def output(self):
-        return {
-            "scaled_x_train": luigi.LocalTarget("robust_scaled_x_train.json"),
-            "scaled_x_test": luigi.LocalTarget("robust_scaled_x_test.json"),
-            "scaler": luigi.LocalTarget("robust_scaler.json"),
-        }
-
-    def run(self):
-        x_train = pd.read_json(self.input()["splitted_data"]["x_train"].path)
-        scaler = RobustScaler()
-        scaler.fit(x_train)
-        scaled_x_train = pd.DataFrame(scaler.transform(x_train), columns=scaler.feature_names_in_, index=x_train.index)
-        scaled_x_train.to_json(self.output()["scaled_x_train"].path)
-
-        x_test = pd.read_json(self.input()["splitted_data"]["x_test"].path)
-        scaler.transform(x_test)
-        scaled_x_test = pd.DataFrame(scaler.transform(x_test), columns=scaler.feature_names_in_, index=x_test.index)
-        scaled_x_test.to_json(self.output()["scaled_x_test"].path)
-
-        with open(self.output()["scaler"].path, "wb") as outfile:
-            json.dump(scaler, outfile)
+    scaler_name = "robust"
+    scaler = RobustScaler()
 
 
 class TrainRegressionModel(CoSyLuigiTask, ABC):
     scaled_feats = CoSyLuigiTaskParameter(FitTransformScaler)
     splitted_data = CoSyLuigiTaskParameter(TrainTestSplit)
+    model_name: str
+    model: RegressorMixin
 
     def _get_variant_label(self):
-        return Path(self.input()["scaled_feats"]["scaled_x_train"].path).stem
+        return f"{self.model_name}-{Path(self.input()['scaled_feats']['scaled_x_train'].path).stem}"
 
-
-class TrainLinearRegressionModel(TrainRegressionModel):
     def output(self):
-        return {"model": luigi.LocalTarget("linear_reg" + "-" + self._get_variant_label() + ".skops")}
+        return {"model": luigi.LocalTarget(self._get_variant_label() + ".skops")}
 
     def run(self):
         x_train = pd.read_json(self.input()["scaled_feats"]["scaled_x_train"].path)
         y_train = pd.read_json(self.input()["splitted_data"]["y_train"].path)
 
-        reg = LinearRegression()
-        reg.fit(x_train, y_train)
+        self.model.fit(x_train, y_train)
 
-        sio.dump(reg, self.output()["model"].path)
+        sio.dump(self.model, self.output()["model"].path)
+
+
+class TrainLinearRegressionModel(TrainRegressionModel):
+    model_name = "linear_reg"
 
 
 class TrainLassoLarsModel(TrainRegressionModel):
-    def output(self):
-        return {"model": luigi.LocalTarget("lasso_lars" + "-" + self._get_variant_label() + ".skops")}
+    model_name = "lasso_lars"
 
     def run(self):
         x_train = pd.read_json(self.input()["scaled_feats"]["scaled_x_train"].path)
