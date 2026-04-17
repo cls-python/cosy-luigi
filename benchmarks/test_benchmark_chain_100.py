@@ -2,7 +2,6 @@ from abc import ABC
 
 import pytest
 from cosy.maestro import Maestro
-from luigi.mock import MockTarget
 
 from cosy_luigi import CoSyLuigiRepo, CoSyLuigiTask, CoSyLuigiTaskParameter
 
