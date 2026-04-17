@@ -26,10 +26,6 @@ class CoSyLuigiTaskParameter(luigi.TaskParameter):
 
 
 class CoSyLuigiTask(luigi.Task):
-    def __init_subclass__(cls, **kwargs):
-        super().__init_subclass__(**kwargs)
-        cls.self = cls
-
     @classmethod
     @cache
     def get_all_variants(cls):
