@@ -11,10 +11,10 @@ class ChainLink(CoSyLuigiTask, ABC):
     chain_link: CoSyLuigiTaskParameter | None
 
     def output(self):
-        return MockTarget("ChainLink")
+        return {"chain_output": MockTarget("ChainLink")}
 
     def run(self):
-        self.output().open("w").write("Ok.")
+        self.output()["chain_output"].open("w").write("Ok.")
 
 
 class StartingLink(ChainLink):
@@ -29,10 +29,10 @@ class FinalLink(CoSyLuigiTask):
     chain_link = CoSyLuigiTaskParameter(ChainLink)
 
     def output(self):
-        return MockTarget("FinalLink")
+        return {"final_output": MockTarget("ChainLink")}
 
     def run(self):
-        self.output().open("w").write("Ok.")
+        self.output()["final_output"].open("w").write("Ok.")
 
 
 @pytest.fixture
