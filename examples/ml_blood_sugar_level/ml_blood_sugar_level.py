@@ -1,3 +1,4 @@
+import os
 import textwrap
 from abc import ABC
 from pathlib import Path
@@ -9,7 +10,7 @@ import skops.io as sio
 from cosy.maestro import Maestro
 from sklearn.base import RegressorMixin
 from sklearn.datasets import load_diabetes
-from sklearn.linear_model import LassoLars
+from sklearn.linear_model import LassoLars, LinearRegression
 from sklearn.metrics import root_mean_squared_error
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler, RobustScaler
@@ -21,14 +22,14 @@ ninetydegaisle = True
 
 class LoadDiabetesData(CoSyLuigiTask):
     def output(self):
-        return {"diabetes_data": luigi.LocalTarget("diabetes.json")}
+        return {"diabetes_data": luigi.LocalTarget("data/diabetes.json")}
 
     def run(self):
         diabetes = load_diabetes()
         df = pd.DataFrame(
             data=np.c_[diabetes["data"], diabetes["target"]], columns=diabetes["feature_names"] + ["target"]
         )
-
+        os.makedirs("data", exist_ok=True)
         df.to_json(self.output()["diabetes_data"].path)
 
 
@@ -37,10 +38,10 @@ class TrainTestSplit(CoSyLuigiTask):
 
     def output(self):
         return {
-            "x_train": luigi.LocalTarget("x_train.json"),
-            "x_test": luigi.LocalTarget("x_test.json"),
-            "y_train": luigi.LocalTarget("y_train.json"),
-            "y_test": luigi.LocalTarget("y_test.json"),
+            "x_train": luigi.LocalTarget("data/x_train.json"),
+            "x_test": luigi.LocalTarget("data/x_test.json"),
+            "y_train": luigi.LocalTarget("data/y_train.json"),
+            "y_test": luigi.LocalTarget("data/y_test.json"),
         }
 
     def run(self):
@@ -62,9 +63,9 @@ class FitTransformScaler(CoSyLuigiTask, ABC):
 
     def output(self):
         return {
-            "scaled_x_train": luigi.LocalTarget(f"{self.scaler_name}_scaled_x_train.json"),
-            "scaled_x_test": luigi.LocalTarget(f"{self.scaler_name}_scaled_x_test.json"),
-            "scaler": luigi.LocalTarget(f"{self.scaler_name}_scaler.skops"),
+            "scaled_x_train": luigi.LocalTarget(f"data/{self.scaler_name}_scaled_x_train.json"),
+            "scaled_x_test": luigi.LocalTarget(f"data/{self.scaler_name}_scaled_x_test.json"),
+            "scaler": luigi.LocalTarget(f"data/{self.scaler_name}_scaler.skops"),
         }
 
     def scale(self, data_identifier: str):
@@ -98,7 +99,7 @@ class TrainRegressionModel(CoSyLuigiTask, ABC):
     model: RegressorMixin
 
     def _get_variant_label(self):
-        return f"{self.model_name}-{Path(self.input()['scaled_feats']['scaled_x_train'].path).stem}"
+        return f"data/{self.model_name}-{Path(self.input()['scaled_feats']['scaled_x_train'].path).stem}"
 
     def output(self):
         return {"model": luigi.LocalTarget(self._get_variant_label() + ".skops")}
@@ -114,18 +115,13 @@ class TrainRegressionModel(CoSyLuigiTask, ABC):
 
 class TrainLinearRegressionModel(TrainRegressionModel):
     model_name = "linear_reg"
+    model = LinearRegression()
 
 
 class TrainLassoLarsModel(TrainRegressionModel):
     model_name = "lasso_lars"
+    model = LassoLars()
 
-    def run(self):
-        x_train = pd.read_json(self.input()["scaled_feats"]["scaled_x_train"].path)
-        y_train = pd.read_json(self.input()["splitted_data"]["y_train"].path)
-
-        reg = LassoLars()
-        reg.fit(x_train, y_train)
-        sio.dump(reg, self.output()["model"].path)
 
 
 class EvaluateRegressionModel(CoSyLuigiTask):
@@ -137,7 +133,7 @@ class EvaluateRegressionModel(CoSyLuigiTask):
         return Path(self.input()["regressor"]["model"].path).stem
 
     def output(self):
-        return luigi.LocalTarget("y_pred" + "-" + self._get_variant_label() + ".json")
+        return {"evaluation": luigi.LocalTarget("data/y_pred" + "-" + self._get_variant_label() + ".json")}
 
     def run(self):
         unknown_types = sio.get_untrusted_types(file=self.input()["regressor"]["model"].path)
@@ -152,7 +148,7 @@ class EvaluateRegressionModel(CoSyLuigiTask):
         print(self._get_variant_label())
         print(f"RMSE: {rmse}")
 
-        y_pred.to_json(self.output().path)
+        y_pred.to_json(self.output()["evaluation"].path)
 
 
 def main():

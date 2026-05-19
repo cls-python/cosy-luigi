@@ -3,15 +3,15 @@ from __future__ import annotations
 import logging
 import textwrap
 from collections import defaultdict
+from collections.abc import Mapping
 from functools import cache, partial
 from typing import TYPE_CHECKING
 
 import luigi
 from cosy.core import Constructor, SpecificationBuilder
-from luigi.task_register import Register
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Mapping, Sequence
+    from collections.abc import Callable, Sequence
 
     from cosy.core.synthesizer import Specification
 
@@ -26,6 +26,19 @@ class CoSyLuigiTaskParameter(luigi.TaskParameter):
 
 
 class CoSyLuigiTask(luigi.Task):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        output = self.output()
+        if not output:
+            return
+        if not isinstance(output, Mapping):
+            msg = f"{self.__class__.__name__}'s output method does not return a Mapping. Unlike regular LuigiTasks, CoSyLuigiTasks must return None or a Mapping, i.e. a dict."
+            raise TypeError(msg)
+        # Map to filenames, str method of FileSystemTargets is path
+        # We do not check for value type, as Luigi will throw Exception if its not a FileSystemTarget already
+        self.task_id += str(frozenset(map(str, output.values())))
+        self.__hash = hash(self.task_id)
+
     @classmethod
     @cache
     def get_all_variants(cls):
@@ -122,8 +135,6 @@ class CoSyLuigiTask(luigi.Task):
 
 class CoSyLuigiRepo:
     def __init__(self, *tasks: type[CoSyLuigiTask] | Sequence[type[CoSyLuigiTask]]):
-        Register.disable_instance_cache()
-
         # Accepts completely heterogeneous nested collections
 
         # This doesn't technically need to unpack as flatten could be typed to accept packed tuples

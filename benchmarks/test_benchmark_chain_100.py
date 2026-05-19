@@ -1,9 +1,13 @@
+import itertools
 from abc import ABC
 
 import pytest
 from cosy.maestro import Maestro
+from luigi.mock import MockTarget
 
 from cosy_luigi import CoSyLuigiRepo, CoSyLuigiTask, CoSyLuigiTaskParameter
+
+counter = itertools.count()
 
 
 class ChainLink(CoSyLuigiTask, ABC):
@@ -17,14 +21,13 @@ class StartingLink(ChainLink):
 class RepeatingLink(ChainLink):
     chain_link = CoSyLuigiTaskParameter(ChainLink)
 
-
-class FinalLink(CoSyLuigiTask):
-    chain_link = CoSyLuigiTaskParameter(ChainLink)
+    def output(self):
+        return {"counter": MockTarget(str(next(counter)))}
 
 
 @pytest.fixture
 def repo():
-    return CoSyLuigiRepo(ChainLink, FinalLink)
+    return CoSyLuigiRepo(ChainLink)
 
 
 def create_infinite_chain(repo):
@@ -32,7 +35,7 @@ def create_infinite_chain(repo):
         repo.cls_repo,
         repo.taxonomy,
     )
-    list(maestro.query(FinalLink.target(), max_count=100))
+    list(maestro.query(RepeatingLink.target(), max_count=100))
 
 
 def test_benchmark_chain_creation(repo, benchmark):
