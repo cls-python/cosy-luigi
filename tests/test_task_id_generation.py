@@ -16,9 +16,6 @@ fs = target_a.fs
 class Shaded(CoSyLuigiTask, ABC):
     identifier: str
 
-    def complete(self):
-        return True
-
 
 class ShadedA(Shaded):
     identifier = "A"
