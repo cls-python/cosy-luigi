@@ -123,7 +123,6 @@ class TrainLassoLarsModel(TrainRegressionModel):
     model = LassoLars()
 
 
-
 class EvaluateRegressionModel(CoSyLuigiTask):
     regressor = CoSyLuigiTaskParameter(TrainRegressionModel)
     scaled_feats = CoSyLuigiTaskParameter(FitTransformScaler, unique_across_prior_tasks=True)
