@@ -36,7 +36,7 @@ class CoSyLuigiTask(luigi.Task):
             raise TypeError(msg)
         # Map to filenames, str method of FileSystemTargets is path
         # We do not check for value type, as Luigi will throw Exception if its not a FileSystemTarget already
-        self.task_id += str(frozenset(map(str, output.values())))
+        self.task_id += "_" + "_".join(map(str, output.values()))
         self.__hash = hash(self.task_id)
 
     @classmethod
