@@ -56,7 +56,7 @@ You can read more about that in the following papers:
 
     ---
 
-    @meyer-2025
+    Meyer, Anne, et al. "_CLS-Luigi: Analytics Pipeline Synthesis._" Learning and Intelligent Optimization, edited by Paola Festa et al., Springer Nature Switzerland, 2025, pp. 269--84.
     
  
 
@@ -64,7 +64,7 @@ You can read more about that in the following papers:
 
     ---
 
-    @dudenhefner-2024
+    Dudenhefner, Andrej, et al. "_Finite Combinatory Logic with Predicates._" 2024.
 
  
 </div>

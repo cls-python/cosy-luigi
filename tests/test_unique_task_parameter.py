@@ -1,3 +1,5 @@
+"""_summary_."""
+
 import logging
 from abc import ABC
 from collections.abc import Callable, Sequence
@@ -10,80 +12,120 @@ from cosy_luigi.constraints import is_unique_in_prior_tasks
 
 
 class ScaleDataABC(CoSyLuigiTask, ABC):
-    pass
+    """_summary_."""
 
 
 class ScaleData(ScaleDataABC):
-    pass
+    """_summary_."""
 
 
 class ScaleDataVariantA(ScaleData):
-    pass
+    """_summary_."""
 
 
 class ScaleDataVariantB(ScaleData):
-    pass
+    """_summary_."""
 
 
 class TrainModel(CoSyLuigiTask, ABC):
+    """_summary_."""
+
     scaled_data = CoSyLuigiTaskParameter(ScaleDataABC)
 
 
 class TrainModelVariantA(TrainModel):
-    pass
+    """_summary_."""
 
 
 class TrainModelVariantB(TrainModel):
-    pass
+    """_summary_."""
 
 
 class EvaluatePipelineWithUniqueScaler(CoSyLuigiTask):
+    """_summary_."""
+
     train_model = CoSyLuigiTaskParameter(TrainModel)
     scaled_data = CoSyLuigiTaskParameter(ScaleDataABC, unique_across_prior_tasks=True)
 
 
 class EvaluatePipelineWithConstraintUniqueScaler(CoSyLuigiTask):
+    """_summary_."""
+
     train_model = CoSyLuigiTaskParameter(TrainModel)
     scaled_data = CoSyLuigiTaskParameter(ScaleDataABC)
 
     @classmethod
     def constraints(cls) -> Sequence[Callable[..., bool]]:
+        """_summary_.
+
+        Returns:
+            Sequence[Callable[..., bool]]: _description_
+        """
         return [lambda vs: is_unique_in_prior_tasks(vs, ScaleDataABC)]
 
 
 class EvaluatePipelineWithUniqueScalerAndNonAbstractSuper(CoSyLuigiTask):
+    """_summary_."""
+
     train_model = CoSyLuigiTaskParameter(TrainModel)
     scaled_data = CoSyLuigiTaskParameter(ScaleData, unique_across_prior_tasks=True)
 
 
 class EvaluatePipeline(CoSyLuigiTask):
+    """_summary_."""
+
     train_model = CoSyLuigiTaskParameter(TrainModel)
     scaled_data = CoSyLuigiTaskParameter(ScaleDataABC)
 
 
 @pytest.fixture
 def repo_without_constraints() -> CoSyLuigiRepo:
+    """_summary_.
+
+    Returns:
+        CoSyLuigiRepo: _description_
+    """
     return CoSyLuigiRepo(TrainModel, ScaleDataABC, EvaluatePipeline)
 
 
 @pytest.fixture
 def repo_with_constraints() -> CoSyLuigiRepo:
+    """_summary_.
+
+    Returns:
+        CoSyLuigiRepo: _description_
+    """
     return CoSyLuigiRepo(TrainModel, ScaleDataABC, EvaluatePipelineWithUniqueScaler)
 
 
 @pytest.fixture
 def repo_with_manual_constraints() -> CoSyLuigiRepo:
+    """_summary_.
+
+    Returns:
+        CoSyLuigiRepo: _description_
+    """
     return CoSyLuigiRepo(TrainModel, ScaleDataABC, EvaluatePipelineWithConstraintUniqueScaler)
 
 
 @pytest.fixture
 def repo_with_non_abstract_super() -> CoSyLuigiRepo:
+    """_summary_.
+
+    Returns:
+        CoSyLuigiRepo: _description_
+    """
     return CoSyLuigiRepo(
         TrainModel, ScaleData, ScaleDataVariantA, ScaleDataVariantB, EvaluatePipelineWithUniqueScalerAndNonAbstractSuper
     )
 
 
 def test_implementation_is_not_unique_across_prior_tasks(repo_without_constraints: CoSyLuigiRepo):
+    """_summary_.
+
+    Args:
+        repo_without_constraints (CoSyLuigiRepo): _description_
+    """
     maestro = Maestro(
         repo_without_constraints.cls_repo,
         repo_without_constraints.taxonomy,
@@ -93,6 +135,11 @@ def test_implementation_is_not_unique_across_prior_tasks(repo_without_constraint
 
 
 def test_implementation_is_unique_across_prior_tasks(repo_with_constraints: CoSyLuigiRepo):
+    """_summary_.
+
+    Args:
+        repo_with_constraints (CoSyLuigiRepo): _description_
+    """
     maestro = Maestro(
         repo_with_constraints.cls_repo,
         repo_with_constraints.taxonomy,
@@ -106,6 +153,11 @@ def test_implementation_is_unique_across_prior_tasks(repo_with_constraints: CoSy
 def test_implementation_is_unique_across_prior_tasks_with_manual_constraint(
     repo_with_manual_constraints: CoSyLuigiRepo,
 ):
+    """_summary_.
+
+    Args:
+        repo_with_manual_constraints (CoSyLuigiRepo): _description_
+    """
     maestro = Maestro(
         repo_with_manual_constraints.cls_repo,
         repo_with_manual_constraints.taxonomy,
@@ -121,6 +173,11 @@ def test_implementation_is_unique_across_prior_tasks_with_manual_constraint(
 def test_implementation_is_unique_across_prior_tasks_with_non_abstract_super(
     repo_with_non_abstract_super: CoSyLuigiRepo,
 ):
+    """_summary_.
+
+    Args:
+        repo_with_non_abstract_super (CoSyLuigiRepo): _description_
+    """
     maestro = Maestro(
         repo_with_non_abstract_super.cls_repo,
         repo_with_non_abstract_super.taxonomy,
@@ -134,6 +191,11 @@ def test_implementation_is_unique_across_prior_tasks_with_non_abstract_super(
 
 
 def test_warning_if_unique_across_prior_tasks_but_no_variance(caplog):
+    """_summary_.
+
+    Args:
+        caplog (_type_): _description_
+    """
     caplog.set_level(logging.WARNING)
     repo_with_constraints_and_no_variance = CoSyLuigiRepo(
         TrainModel, ScaleData, EvaluatePipelineWithUniqueScalerAndNonAbstractSuper
