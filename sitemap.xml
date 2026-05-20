@@ -2,74 +2,142 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://cls-python.github.io/cosy-luigi/</loc>
-         <lastmod>2026-03-30</lastmod>
+         <lastmod>2026-05-20</lastmod>
     </url>
     <url>
          <loc>https://cls-python.github.io/cosy-luigi/quick-start/</loc>
-         <lastmod>2026-03-30</lastmod>
+         <lastmod>2026-05-20</lastmod>
     </url>
     <url>
          <loc>https://cls-python.github.io/cosy-luigi/about/authors/</loc>
-         <lastmod>2026-03-30</lastmod>
+         <lastmod>2026-05-20</lastmod>
     </url>
     <url>
          <loc>https://cls-python.github.io/cosy-luigi/examples/SUMMARY/</loc>
-         <lastmod>2026-03-30</lastmod>
+         <lastmod>2026-05-20</lastmod>
     </url>
     <url>
          <loc>https://cls-python.github.io/cosy-luigi/examples/introduction/</loc>
-         <lastmod>2026-03-30</lastmod>
+         <lastmod>2026-05-20</lastmod>
+    </url>
+    <url>
+         <loc>https://cls-python.github.io/cosy-luigi/examples/getting_started/</loc>
+         <lastmod>2026-05-20</lastmod>
+    </url>
+    <url>
+         <loc>https://cls-python.github.io/cosy-luigi/examples/getting_started/basic_example/</loc>
+         <lastmod>2026-05-20</lastmod>
+    </url>
+    <url>
+         <loc>https://cls-python.github.io/cosy-luigi/examples/getting_started/basic_example.src/</loc>
+         <lastmod>2026-05-20</lastmod>
+    </url>
+    <url>
+         <loc>https://cls-python.github.io/cosy-luigi/examples/getting_started/variation_example/</loc>
+         <lastmod>2026-05-20</lastmod>
+    </url>
+    <url>
+         <loc>https://cls-python.github.io/cosy-luigi/examples/getting_started/variation_example.src/</loc>
+         <lastmod>2026-05-20</lastmod>
     </url>
     <url>
          <loc>https://cls-python.github.io/cosy-luigi/examples/lot_sizing/</loc>
-         <lastmod>2026-03-30</lastmod>
+         <lastmod>2026-05-20</lastmod>
     </url>
     <url>
          <loc>https://cls-python.github.io/cosy-luigi/examples/lot_sizing/lot_sizing_pipeline/</loc>
-         <lastmod>2026-03-30</lastmod>
+         <lastmod>2026-05-20</lastmod>
+    </url>
+    <url>
+         <loc>https://cls-python.github.io/cosy-luigi/examples/lot_sizing/lot_sizing_pipeline.src/</loc>
+         <lastmod>2026-05-20</lastmod>
     </url>
     <url>
          <loc>https://cls-python.github.io/cosy-luigi/examples/lot_sizing/lot_optimizers/groff_heuristic/</loc>
-         <lastmod>2026-03-30</lastmod>
+         <lastmod>2026-05-20</lastmod>
+    </url>
+    <url>
+         <loc>https://cls-python.github.io/cosy-luigi/examples/lot_sizing/lot_optimizers/groff_heuristic.src/</loc>
+         <lastmod>2026-05-20</lastmod>
     </url>
     <url>
          <loc>https://cls-python.github.io/cosy-luigi/examples/lot_sizing/lot_optimizers/least_unit_cost_method/</loc>
-         <lastmod>2026-03-30</lastmod>
+         <lastmod>2026-05-20</lastmod>
+    </url>
+    <url>
+         <loc>https://cls-python.github.io/cosy-luigi/examples/lot_sizing/lot_optimizers/least_unit_cost_method.src/</loc>
+         <lastmod>2026-05-20</lastmod>
     </url>
     <url>
          <loc>https://cls-python.github.io/cosy-luigi/examples/lot_sizing/lot_optimizers/part_period_heuristic/</loc>
-         <lastmod>2026-03-30</lastmod>
+         <lastmod>2026-05-20</lastmod>
+    </url>
+    <url>
+         <loc>https://cls-python.github.io/cosy-luigi/examples/lot_sizing/lot_optimizers/part_period_heuristic.src/</loc>
+         <lastmod>2026-05-20</lastmod>
     </url>
     <url>
          <loc>https://cls-python.github.io/cosy-luigi/examples/lot_sizing/lot_optimizers/silver_meal_heuristic/</loc>
-         <lastmod>2026-03-30</lastmod>
+         <lastmod>2026-05-20</lastmod>
+    </url>
+    <url>
+         <loc>https://cls-python.github.io/cosy-luigi/examples/lot_sizing/lot_optimizers/silver_meal_heuristic.src/</loc>
+         <lastmod>2026-05-20</lastmod>
     </url>
     <url>
          <loc>https://cls-python.github.io/cosy-luigi/examples/lot_sizing/lot_optimizers/wagner_whitin/</loc>
-         <lastmod>2026-03-30</lastmod>
+         <lastmod>2026-05-20</lastmod>
+    </url>
+    <url>
+         <loc>https://cls-python.github.io/cosy-luigi/examples/lot_sizing/lot_optimizers/wagner_whitin.src/</loc>
+         <lastmod>2026-05-20</lastmod>
     </url>
     <url>
          <loc>https://cls-python.github.io/cosy-luigi/examples/ml_blood_sugar_level/</loc>
-         <lastmod>2026-03-30</lastmod>
+         <lastmod>2026-05-20</lastmod>
     </url>
     <url>
          <loc>https://cls-python.github.io/cosy-luigi/examples/ml_blood_sugar_level/ml_blood_sugar_level/</loc>
-         <lastmod>2026-03-30</lastmod>
+         <lastmod>2026-05-20</lastmod>
+    </url>
+    <url>
+         <loc>https://cls-python.github.io/cosy-luigi/examples/ml_blood_sugar_level/ml_blood_sugar_level.src/</loc>
+         <lastmod>2026-05-20</lastmod>
     </url>
     <url>
          <loc>https://cls-python.github.io/cosy-luigi/reference/SUMMARY/</loc>
-         <lastmod>2026-03-30</lastmod>
+         <lastmod>2026-05-20</lastmod>
     </url>
     <url>
          <loc>https://cls-python.github.io/cosy-luigi/reference/cosy_luigi/__init__/</loc>
-         <lastmod>2026-03-30</lastmod>
+         <lastmod>2026-05-20</lastmod>
     </url>
     <url>
          <loc>https://cls-python.github.io/cosy-luigi/reference/cosy_luigi/_version/</loc>
-         <lastmod>2026-03-30</lastmod>
+         <lastmod>2026-05-20</lastmod>
     </url>
     <url>
-         <loc>https://cls-python.github.io/cosy-luigi/reference/cosy_luigi/combinatorics/</loc>
-         <lastmod>2026-03-30</lastmod>
+         <loc>https://cls-python.github.io/cosy-luigi/reference/cosy_luigi/constraints/__init__/</loc>
+         <lastmod>2026-05-20</lastmod>
+    </url>
+    <url>
+         <loc>https://cls-python.github.io/cosy-luigi/reference/cosy_luigi/constraints/unique/</loc>
+         <lastmod>2026-05-20</lastmod>
+    </url>
+    <url>
+         <loc>https://cls-python.github.io/cosy-luigi/reference/cosy_luigi/core/__init__/</loc>
+         <lastmod>2026-05-20</lastmod>
+    </url>
+    <url>
+         <loc>https://cls-python.github.io/cosy-luigi/reference/cosy_luigi/core/combinatorics/</loc>
+         <lastmod>2026-05-20</lastmod>
+    </url>
+    <url>
+         <loc>https://cls-python.github.io/cosy-luigi/reference/cosy_luigi/utils/__init__/</loc>
+         <lastmod>2026-05-20</lastmod>
+    </url>
+    <url>
+         <loc>https://cls-python.github.io/cosy-luigi/reference/cosy_luigi/utils/traversals/</loc>
+         <lastmod>2026-05-20</lastmod>
     </url>
 </urlset>
