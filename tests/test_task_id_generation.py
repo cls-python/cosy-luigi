@@ -1,4 +1,5 @@
 """_summary_."""
+
 from abc import ABC
 
 import luigi
@@ -16,21 +17,25 @@ fs = target_a.fs
 
 class Shaded(CoSyLuigiTask, ABC):
     """_summary_."""
+
     identifier: str
 
 
 class ShadedA(Shaded):
     """_summary_."""
+
     identifier = "A"
 
 
 class ShadedB(Shaded):
     """_summary_."""
+
     identifier = "B"
 
 
 class Shade(CoSyLuigiTask):
     """_summary_."""
+
     shaded = CoSyLuigiTaskParameter(Shaded)
 
     def complete(self):
@@ -44,6 +49,7 @@ class Shade(CoSyLuigiTask):
 
 class Evaluate(CoSyLuigiTask):
     """_summary_."""
+
     shade = CoSyLuigiTaskParameter(Shade)
 
     def run(self):
@@ -66,6 +72,7 @@ class EvaluateWithPotentialToShade(Evaluate):
     Attributes:
         task_id (_type_): _description_
     """
+
     def __init__(self, *args, **kwargs):
         """_summary_.
 
@@ -136,8 +143,10 @@ def test_shading_would_be_possible(shadeable_repo):
 
 def test_output_mapping_is_enforced():
     """_summary_."""
+
     class TaskWithWrongOutputA(CoSyLuigiTask):
         """_summary_."""
+
         def output(self):
             """_summary_.
 
@@ -151,6 +160,7 @@ def test_output_mapping_is_enforced():
 
     class TaskWithWrongOutputB(CoSyLuigiTask):
         """_summary_."""
+
         def output(self):
             """_summary_.
 
@@ -164,6 +174,5 @@ def test_output_mapping_is_enforced():
 
     class TaskWithNoneOutput(CoSyLuigiTask):
         """_summary_."""
-        pass
 
     TaskWithNoneOutput()

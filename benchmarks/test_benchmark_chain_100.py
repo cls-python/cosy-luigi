@@ -1,4 +1,5 @@
 """_summary_."""
+
 import itertools
 from abc import ABC
 
@@ -13,16 +14,19 @@ counter = itertools.count()
 
 class ChainLink(CoSyLuigiTask, ABC):
     """_summary_."""
+
     chain_link: CoSyLuigiTaskParameter | None
 
 
 class StartingLink(ChainLink):
     """_summary_."""
+
     chain_link = None
 
 
 class RepeatingLink(ChainLink):
     """_summary_."""
+
     chain_link = CoSyLuigiTaskParameter(ChainLink)
 
     def output(self):

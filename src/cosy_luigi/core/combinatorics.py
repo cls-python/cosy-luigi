@@ -1,4 +1,5 @@
 """_summary_."""
+
 from __future__ import annotations
 
 import logging
@@ -6,7 +7,6 @@ import textwrap
 from collections import defaultdict
 from collections.abc import Mapping
 from functools import cache, partial
-from types import UnionType
 from typing import TYPE_CHECKING, Any
 
 import luigi
@@ -27,6 +27,7 @@ class CoSyLuigiTaskParameter(luigi.TaskParameter):
         required_task (type[CoSyLuigiTask]): _description_
         unique_across_prior_tasks (bool): _description_
     """
+
     def __init__(self, required_task: type[CoSyLuigiTask], *, unique_across_prior_tasks: bool = False):
         """_summary_.
 
@@ -41,6 +42,7 @@ class CoSyLuigiTaskParameter(luigi.TaskParameter):
 
 class CoSyLuigiTask(luigi.Task):
     """_summary_."""
+
     def __init__(self, *args, **kwargs):
         """_summary_.
 
@@ -65,7 +67,7 @@ class CoSyLuigiTask(luigi.Task):
 
     @classmethod
     @cache
-    def get_all_variants(cls) ->  set[type[CoSyLuigiTask] | Any]:
+    def get_all_variants(cls) -> set[type[CoSyLuigiTask] | Any]:
         """_summary_.
 
         Returns:
@@ -75,18 +77,18 @@ class CoSyLuigiTask(luigi.Task):
 
     @classmethod
     @cache
-    def get_all_class_attributes(cls) ->  dict[str, Any]:
+    def get_all_class_attributes(cls) -> dict[str, Any]:
         """_summary_.
 
         Returns:
             dict[str, Any]: _description_
         """
-        attrs = {}
+        attrs: dict[str, Any] = {}
         for c in [cc for cc in reversed(cls.__mro__) if issubclass(cc, CoSyLuigiTask)]:
             attrs.update(getattr(c, "__dict__", {}))
         return attrs
 
-    def get_all_instance_attributes(self) ->  dict[str, Any]:
+    def get_all_instance_attributes(self) -> dict[str, Any]:
         """_summary_.
 
         Returns:
@@ -94,7 +96,7 @@ class CoSyLuigiTask(luigi.Task):
         """
         return {attr: getattr(self, attr) for attr in dir(self)}
 
-    def requires(self) -> dict[str, type[Callable] | Any]:
+    def requires(self) -> dict[str, CoSyLuigiTask]:
         """Returns a list of other tasks required to run this task.
 
         This is done by retrieving all user-created attributes that are subclasses of CosyLuigiTaskParameter.
@@ -102,7 +104,7 @@ class CoSyLuigiTask(luigi.Task):
         Note that at Runtime Luigi unpacks CosyLuigiTaskParameters, so the actual check has to be for CoSyLuigiTasks.
 
         Returns:
-            dict[str, type[Callable] | Any]: A list of other tasks required to run this task
+            dict[str, CoSyLuigiTask]: A list of other tasks required to run this task
         """
         return {
             k: v
@@ -207,11 +209,11 @@ class CoSyLuigiTask(luigi.Task):
         return sp.suffix(cls.target())
 
     @classmethod
-    def combinator(cls) -> tuple[str, Callable[CoSyLuigiTask, Specification]]:
+    def combinator(cls) -> tuple[str, Callable[..., CoSyLuigiTask], Specification]:
         """_summary_.
 
         Returns:
-            tuple[str, Callable[CoSyLuigiTask, Specification]]: _description_
+            tuple[str, Callable[..., CoSyLuigiTask], Specification]: _description_
         """
         if len(cls._requirements()) == 0:
             return cls.__name__, lambda: cls(), cls.combinator_type()
@@ -226,6 +228,7 @@ class CoSyLuigiRepo:
         taxonomy (Mapping[str, set[str]]): _description_
         cls_repo (list[tuple[str, Callable, Specification]]): _description_
     """
+
     def __init__(self, *tasks: type[CoSyLuigiTask] | Sequence[type[CoSyLuigiTask]]):
         # Accepts completely heterogeneous nested collections
 

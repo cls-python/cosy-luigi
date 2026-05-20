@@ -1,61 +1,51 @@
 """_summary_."""
+
 from cosy_luigi import CoSyLuigiRepo, CoSyLuigiTask
 from cosy_luigi.utils import flatten
 
 
 class TaskA(CoSyLuigiTask):
     """_summary_."""
-    pass
 
 
 class TaskB(CoSyLuigiTask):
     """_summary_."""
-    pass
 
 
 class TaskC(CoSyLuigiTask):
     """_summary_."""
-    pass
 
 
 class TaskD(CoSyLuigiTask):
     """_summary_."""
-    pass
 
 
 class TaskE(CoSyLuigiTask):
     """_summary_."""
-    pass
 
 
 class TaskF(CoSyLuigiTask):
     """_summary_."""
-    pass
 
 
 class TaskG(CoSyLuigiTask):
     """_summary_."""
-    pass
 
 
 class TaskH(CoSyLuigiTask):
     """_summary_."""
-    pass
 
 
 class TaskI(CoSyLuigiTask):
     """_summary_."""
-    pass
 
 
 class TaskJ(CoSyLuigiTask):
     """_summary_."""
-    pass
 
 
 class TaskK(CoSyLuigiTask):
     """_summary_."""
-    pass
 
 
 def test_heterogeneous_repo_input():

@@ -1,4 +1,5 @@
 """_summary_."""
+
 import logging
 from abc import ABC
 from collections.abc import Callable, Sequence
@@ -12,47 +13,44 @@ from cosy_luigi.constraints import is_unique_in_prior_tasks
 
 class ScaleDataABC(CoSyLuigiTask, ABC):
     """_summary_."""
-    pass
 
 
 class ScaleData(ScaleDataABC):
     """_summary_."""
-    pass
 
 
 class ScaleDataVariantA(ScaleData):
     """_summary_."""
-    pass
 
 
 class ScaleDataVariantB(ScaleData):
     """_summary_."""
-    pass
 
 
 class TrainModel(CoSyLuigiTask, ABC):
     """_summary_."""
+
     scaled_data = CoSyLuigiTaskParameter(ScaleDataABC)
 
 
 class TrainModelVariantA(TrainModel):
     """_summary_."""
-    pass
 
 
 class TrainModelVariantB(TrainModel):
     """_summary_."""
-    pass
 
 
 class EvaluatePipelineWithUniqueScaler(CoSyLuigiTask):
     """_summary_."""
+
     train_model = CoSyLuigiTaskParameter(TrainModel)
     scaled_data = CoSyLuigiTaskParameter(ScaleDataABC, unique_across_prior_tasks=True)
 
 
 class EvaluatePipelineWithConstraintUniqueScaler(CoSyLuigiTask):
     """_summary_."""
+
     train_model = CoSyLuigiTaskParameter(TrainModel)
     scaled_data = CoSyLuigiTaskParameter(ScaleDataABC)
 
@@ -68,12 +66,14 @@ class EvaluatePipelineWithConstraintUniqueScaler(CoSyLuigiTask):
 
 class EvaluatePipelineWithUniqueScalerAndNonAbstractSuper(CoSyLuigiTask):
     """_summary_."""
+
     train_model = CoSyLuigiTaskParameter(TrainModel)
     scaled_data = CoSyLuigiTaskParameter(ScaleData, unique_across_prior_tasks=True)
 
 
 class EvaluatePipeline(CoSyLuigiTask):
     """_summary_."""
+
     train_model = CoSyLuigiTaskParameter(TrainModel)
     scaled_data = CoSyLuigiTaskParameter(ScaleDataABC)
 

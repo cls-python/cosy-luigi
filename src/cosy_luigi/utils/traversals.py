@@ -1,9 +1,11 @@
 """_summary_."""
+
 from __future__ import annotations
 
 import inspect
 from abc import ABC
-from typing import TYPE_CHECKING, cast, Any, Generator
+from collections.abc import Sequence
+from typing import TYPE_CHECKING, cast
 
 from cosy_luigi import CoSyLuigiTask
 
@@ -11,20 +13,22 @@ if TYPE_CHECKING:
     from collections.abc import Iterable, Sequence
 
 
-def flatten(*heterogeneous_task_collection: type[CoSyLuigiTask] | Sequence[type[CoSyLuigiTask]]) ->  Generator[type[CoSyLuigiTask] | Sequence[type[CoSyLuigiTask]] | Any, Any, None]:
+def flatten(
+    *heterogeneous_task_collection: type[CoSyLuigiTask] | Iterable[type[CoSyLuigiTask]],
+) -> Iterable[type[CoSyLuigiTask]]:
     """_summary_.
 
     Args:
         *heterogeneous_task_collection (type[CoSyLuigiTask] | Sequence[type[CoSyLuigiTask]]): _description_
 
     Returns:
-         Generator[type[CoSyLuigiTask] | Sequence[type[CoSyLuigiTask]] | Any, Any, None]: _description_
+         Iterable[type[CoSyLuigiTask]]: _description_
     """
     return (
-        task
+        task  # type: ignore # guaranteed by recursion to be a type[CoSyLuigiTask] instead of an Iterable itself
         for task_or_task_collection in heterogeneous_task_collection
         for task in (
-            flatten(*cast("Sequence[type[CoSyLuigiTask]]", task_or_task_collection))
+            flatten(*cast("Iterable[type[CoSyLuigiTask]]", task_or_task_collection))
             if isinstance(task_or_task_collection, (tuple, list))
             else cast("type[CoSyLuigiTask]", task_or_task_collection).get_all_variants()
             if inspect.isabstract(task_or_task_collection)
@@ -43,7 +47,7 @@ def _traverse_pipeline(vs: Sequence[CoSyLuigiTask] | Iterable[CoSyLuigiTask]) ->
     Returns:
         Sequence[CoSyLuigiTask]: _description_
     """
-    result = [*vs]
+    result: list[CoSyLuigiTask] = [*vs]
     for v in vs:
         result.extend(traverse_pipeline(v.requires().values()))
     return result

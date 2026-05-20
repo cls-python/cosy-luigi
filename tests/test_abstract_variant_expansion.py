@@ -1,4 +1,5 @@
 """_summary_."""
+
 from abc import ABC, abstractmethod
 
 from cosy_luigi import CoSyLuigiRepo, CoSyLuigiTask
@@ -6,27 +7,24 @@ from cosy_luigi import CoSyLuigiRepo, CoSyLuigiTask
 
 class ABCInheritedTaskWithNoInheritors(CoSyLuigiTask, ABC):
     """_summary_."""
-    pass
 
 
 class ABCInheritedTask(CoSyLuigiTask, ABC):
     """_summary_."""
-    pass
 
 
 class ConcreteTaskFromABCInherited(ABCInheritedTask):
     """_summary_."""
-    pass
 
 
 class DeeperConcreteTaskFromABCInherited(ConcreteTaskFromABCInherited):
     """_summary_."""
-    pass
 
 
 # noinspection PyAbstractClass
 class AbstractTask(CoSyLuigiTask):
     """_summary_."""
+
     @abstractmethod
     def get_class_name(self):
         """_summary_.
@@ -40,6 +38,7 @@ class AbstractTask(CoSyLuigiTask):
 # noinspection PyAbstractClass
 class AbstractTaskWithNoInheritors(CoSyLuigiTask):
     """_summary_."""
+
     @abstractmethod
     def get_class_name(self):
         """_summary_.
@@ -52,6 +51,7 @@ class AbstractTaskWithNoInheritors(CoSyLuigiTask):
 
 class ConcreteTaskFromAbstract(AbstractTask):
     """_summary_."""
+
     def get_class_name(self):
         """_summary_.
 
@@ -63,6 +63,7 @@ class ConcreteTaskFromAbstract(AbstractTask):
 
 class DeeperConcreteTaskFromAbstract(ConcreteTaskFromAbstract):
     """_summary_."""
+
     def get_class_name(self):
         """_summary_.
 
