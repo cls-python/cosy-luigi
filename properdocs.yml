@@ -82,12 +82,15 @@ plugins:
           show_if_no_docstring: true
           show_signature_annotations: true
           show_bases: false
+          backlinks: tree
+          show_inheritance_diagram: true
+          extensions:
+            - dataclasses
+            - unpack_typeddict
+            - griffe_generics
   git-revision-date-localized:
     type: date
     strict: false
-  bibtex:
-    bib_dir: "docs/bibliographies"
-    csl_file: "docs/bibliographies/modern-language-association.csl"
 
 markdown_extensions:
   - attr_list:
@@ -106,9 +109,9 @@ markdown_extensions:
       line_spans: __span
       pygments_lang_class: true
       guess_lang: false
-      default_lang: cosy-luigi-py
+      default_lang: python
   - pymdownx.inlinehilite:
-      style_plain_text: cosy-luigi-py
+      style_plain_text: python
   - pymdownx.snippets:
   - pymdownx.superfences:
   - pymdownx.blocks.tab:

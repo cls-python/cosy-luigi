@@ -1,8 +1,9 @@
+"""_summary_."""
 from __future__ import annotations
 
 import inspect
 from abc import ABC
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, cast, Any, Generator
 
 from cosy_luigi import CoSyLuigiTask
 
@@ -10,7 +11,15 @@ if TYPE_CHECKING:
     from collections.abc import Iterable, Sequence
 
 
-def flatten(*heterogeneous_task_collection: type[CoSyLuigiTask] | Sequence[type[CoSyLuigiTask]]):
+def flatten(*heterogeneous_task_collection: type[CoSyLuigiTask] | Sequence[type[CoSyLuigiTask]]) ->  Generator[type[CoSyLuigiTask] | Sequence[type[CoSyLuigiTask]] | Any, Any, None]:
+    """_summary_.
+
+    Args:
+        *heterogeneous_task_collection (type[CoSyLuigiTask] | Sequence[type[CoSyLuigiTask]]): _description_
+
+    Returns:
+         Generator[type[CoSyLuigiTask] | Sequence[type[CoSyLuigiTask]] | Any, Any, None]: _description_
+    """
     return (
         task
         for task_or_task_collection in heterogeneous_task_collection
@@ -26,6 +35,14 @@ def flatten(*heterogeneous_task_collection: type[CoSyLuigiTask] | Sequence[type[
 
 
 def _traverse_pipeline(vs: Sequence[CoSyLuigiTask] | Iterable[CoSyLuigiTask]) -> Sequence[CoSyLuigiTask]:
+    """_summary_.
+
+    Args:
+        vs (Sequence[CoSyLuigiTask] | Iterable[CoSyLuigiTask]): _description_
+
+    Returns:
+        Sequence[CoSyLuigiTask]: _description_
+    """
     result = [*vs]
     for v in vs:
         result.extend(traverse_pipeline(v.requires().values()))
@@ -35,6 +52,14 @@ def _traverse_pipeline(vs: Sequence[CoSyLuigiTask] | Iterable[CoSyLuigiTask]) ->
 def traverse_pipeline(
     to_traverse: CoSyLuigiTask | Sequence[CoSyLuigiTask] | Iterable[CoSyLuigiTask],
 ) -> Sequence[CoSyLuigiTask]:
+    """_summary_.
+
+    Args:
+        to_traverse (CoSyLuigiTask | Sequence[CoSyLuigiTask] | Iterable[CoSyLuigiTask]): _description_
+
+    Returns:
+        Sequence[CoSyLuigiTask]: _description_
+    """
     return (
         _traverse_pipeline([to_traverse]) if isinstance(to_traverse, CoSyLuigiTask) else _traverse_pipeline(to_traverse)
     )

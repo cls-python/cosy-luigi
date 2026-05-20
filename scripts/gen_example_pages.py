@@ -52,14 +52,20 @@ for directory in [Path(d.path) for d in os.scandir(src)]:
 
     for path in sorted(directory.rglob("*.py")):
         module_path = path.relative_to(src).with_suffix("")
+        module_path_src = path.relative_to(src).with_suffix(".src")
         doc_path = path.relative_to(src).with_suffix(".md")
+        doc_path_src = path.relative_to(src).with_suffix(".src.md")
         full_doc_path = Path("examples", doc_path)
+        full_doc_path_src = Path("examples", doc_path_src)
 
         parts = tuple(module_path.parts)
+        src_parts = tuple(module_path_src.parts)
         if example_name:
-            nav[(*example_name, "Source Files", *parts[1:-1], f"{parts[-1]}.py")] = doc_path.as_posix()
+            nav[(*example_name, "Documentation", *parts[1:-1], f"{parts[-1]}.py")] = doc_path.as_posix()
+            nav[(*example_name, "Source Files", *parts[1:-1], f"{parts[-1]}.py")] = doc_path_src.as_posix()
         else:
             nav[parts] = doc_path.as_posix()
+            nav[src_parts] = doc_path_src.as_posix()
 
         with mkdocs_gen_files.open(full_doc_path, "w") as fd:
             ident = ".".join(parts)
@@ -69,6 +75,9 @@ for directory in [Path(d.path) for d in os.scandir(src)]:
                 members_order: source
             """
             )
+        with mkdocs_gen_files.open(full_doc_path_src, "w") as fd:
+            fd.write("---\nhide:\n  - toc\n---\n")
+            fd.write(f"```\n{path.read_text()}\n```\n")
 
         mkdocs_gen_files.set_edit_path(full_doc_path, path.relative_to(root))
 
