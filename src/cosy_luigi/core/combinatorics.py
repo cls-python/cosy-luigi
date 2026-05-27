@@ -21,19 +21,24 @@ logger = logging.getLogger(__name__)
 
 
 class CoSyLuigiTaskParameter(luigi.TaskParameter):
-    """_summary_.
+    """Serves as CoSy-specific version of luigi.TaskParameter. It has two primary uses: Providing a unique classname
+    for the reflection-based operations of the CoSyLuigiTask to examine, and wrapping the classes that a
+    CoSyLuigiTask requires to be inhabited. For instance, for a class B, which declares a CoSyLuigiTaskParameter that
+    wraps the Class A, the resulting CoSy combinator type would be A -> B.
+
 
     Attributes:
-        required_task (type[CoSyLuigiTask]): _description_
-        unique_across_prior_tasks (bool): _description_
+        required_task (type[CoSyLuigiTask]): The type of CoSyLuigiTask this parameter wraps.
+        unique_across_prior_tasks (bool): Whether or not to enforce that all concrete occurences of the potentially abstract wrapped type need to be the same.
     """
 
     def __init__(self, required_task: type[CoSyLuigiTask], *, unique_across_prior_tasks: bool = False):
-        """_summary_.
+        """Initializes the CoSyLuigiTaskParameter. Setting unique_across_prior_tasks to True only makes sense if the
+        required_task is abstract.
 
         Args:
-            required_task (type[CoSyLuigiTask]): _description_
-            unique_across_prior_tasks (bool): _description_ (Default value = False)
+            required_task (type[CoSyLuigiTask]): The type of CoSyLuigiTask this parameter wraps.
+            unique_across_prior_tasks (bool): Whether or not to enforce that all concrete occurences of the potentially abstract wrapped type need to be the same.
         """
         super().__init__()
         self.required_task = required_task
@@ -41,17 +46,22 @@ class CoSyLuigiTaskParameter(luigi.TaskParameter):
 
 
 class CoSyLuigiTask(luigi.Task):
-    """_summary_."""
+    """Serves as a CoSy-specific version of luigi.Task. Types derived from CoSyLuigiTask can be added to a
+    CoSyLuigiRepo and will automatically produce typed combinators for synthesis. The main purpose of CoSyLuigiTask
+    is to enforce some conventions and utilize reflections to model variance through Python object inheritance. A
+    task that requires another task of a given type T will also find all subclasses of T as valid inputs."""
 
     def __init__(self, *args, **kwargs):
-        """_summary_.
+        """Initializes the CoSyLuigiTask. This only happens during and after synthesis, when the combinators are
+        interpreted. Most functionality is instead implemented on class-level to benefit from caching,
+        since constraints/predicates during synthesis can cause large numbers of instances to be created.
 
         Args:
-            *args (_type_): _description_
-            **kwargs (_type_): _description_
+            *args (_type_): Passed to super().__init__().
+            **kwargs (_type_): Passed to super().__init__().
 
         Raises:
-            TypeError: _description_
+            TypeError: The output method of a CoSyLuigiTask must return a Mapping. This is done to prevent addressing output files by index, which leads to unreadable code.
         """
         super().__init__(*args, **kwargs)
         output = self.output()
@@ -68,20 +78,23 @@ class CoSyLuigiTask(luigi.Task):
     @classmethod
     @cache
     def get_all_variants(cls) -> set[type[CoSyLuigiTask] | Any]:
-        """_summary_.
+        """Recursively finds all subclasses of current class.
 
         Returns:
-            set[type[CoSyLuigiTask] | Any]: _description_
+            set[type[CoSyLuigiTask] | Any]: The set of all subclasses.
         """
         return set(cls.__subclasses__()).union([s for c in cls.__subclasses__() for s in c.get_all_variants()])
 
     @classmethod
     @cache
     def get_all_class_attributes(cls) -> dict[str, Any]:
-        """_summary_.
+        """Collects all class attributes that will be present at runtime. Python does not store class attributes from
+        parent classes in the dict of the subclasses. This method traverses the __mro__, the ordered list of
+        superclasses to consider for looking for methods, up to the first class that no longer relates to CoSy and
+        copies all their attributes down to the current class.
 
         Returns:
-            dict[str, Any]: _description_
+            dict[str, Any]: A dict containing all attributes that will be present at runtime.
         """
         attrs: dict[str, Any] = {}
         for c in [cc for cc in reversed(cls.__mro__) if issubclass(cc, CoSyLuigiTask)]:
@@ -89,22 +102,23 @@ class CoSyLuigiTask(luigi.Task):
         return attrs
 
     def get_all_instance_attributes(self) -> dict[str, Any]:
-        """_summary_.
+        """Collects all attributes present on an instance at runtime. This method specifically accounts for the fact
+        that Luigi switches out LuigiTaskParameters for the true passed objects at instantiation.
 
         Returns:
-             dict[str, Any]: _description_
+             dict[str, Any]: A dict containing all attributes that are present at runtime.
         """
         return {attr: getattr(self, attr) for attr in dir(self)}
 
     def requires(self) -> dict[str, CoSyLuigiTask]:
-        """Returns a list of other tasks required to run this task.
-
-        This is done by retrieving all user-created attributes that are subclasses of CosyLuigiTaskParameter.
-
-        Note that at Runtime Luigi unpacks CosyLuigiTaskParameters, so the actual check has to be for CoSyLuigiTasks.
+        """Returns a dict of other tasks required to run this task. This is done by retrieving all user-created
+        attributes that are subclasses of CosyLuigiTaskParameter. Note that at Runtime Luigi unpacks
+        CosyLuigiTaskParameters, so the actual check has to be for CoSyLuigiTasks. This overrides the requires method
+        of luigi.Task, and thus ensures that the Luigi scheduler when executing a task "sees" the requirements
+        allocated during synthesis.
 
         Returns:
-            dict[str, CoSyLuigiTask]: A list of other tasks required to run this task
+            dict[str, CoSyLuigiTask]: A dict of other tasks required to run this task, keyed by attribute name.
         """
         return {
             k: v
@@ -115,10 +129,13 @@ class CoSyLuigiTask(luigi.Task):
     @classmethod
     @cache
     def _requirements(cls) -> Mapping[str, CoSyLuigiTaskParameter]:
-        """_summary_.
+        """Filters all class attributes present at runtime to only contain CoSyLuigiTaskParameters. Its primary use
+        is collecting the potentially abstract requirements so that a type for the combinator can be generated. Each
+        entry in the dict returned by this method results in one non-rightmost entry in the arrow type of the
+        resulting combinator.
 
         Returns:
-            Mapping[str, CoSyLuigiTaskParameter]: _description_
+            Mapping[str, CoSyLuigiTaskParameter]: The CoSyLuigiTaskParameters present on the class, keyed by attribute name.
         """
         return {
             k: v
@@ -129,20 +146,21 @@ class CoSyLuigiTask(luigi.Task):
     @classmethod
     @cache
     def get_params(cls) -> list[tuple[str, CoSyLuigiTaskParameter]]:
-        """_summary_.
+        """Converts the output of _requirements into a list of tuples instead of a dict.
 
         Returns:
-            list[tuple[str, CoSyLuigiTaskParameter]]: _description_
+            list[tuple[str, CoSyLuigiTaskParameter]]: A list of tuples representing the output of _requirements.
         """
         return list(cls._requirements().items())
 
     @classmethod
     @cache
     def requirements_unique_in_prior_tasks(cls) -> Mapping[str, CoSyLuigiTaskParameter]:
-        """_summary_.
+        """Filters the output of _requirements, returning only those dict entries where the CoSyLuigiTaskParameter
+        has the optional unique_across_prior_tasks flag set.
 
         Returns:
-            Mapping[str, CoSyLuigiTaskParameter]: _description_
+            Mapping[str, CoSyLuigiTaskParameter]: The filtered output of _requirements.
         """
         return {
             k: task_parameter
@@ -153,38 +171,44 @@ class CoSyLuigiTask(luigi.Task):
     @classmethod
     @cache
     def unique_required_tasks_in_prior(cls) -> Sequence[type[CoSyLuigiTask]]:
-        """_summary_.
+        """Transforms the output of requirements_unique_in_prior_tasks into a list of classes that the collected
+        CoSyLuigiTaskParameter's indicate should be unique across prior tasks.
 
         Returns:
-            Sequence[type[CoSyLuigiTask]]: _description_
+            Sequence[type[CoSyLuigiTask]]: The transformed output of requirements_unique_in_prior_tasks.
         """
         return [task_parameter.required_task for task_parameter in cls.requirements_unique_in_prior_tasks().values()]
 
     @classmethod
     @cache
     def target(cls) -> Constructor:
-        """_summary_.
+        """The target constructed by this class. This is the right-most entry of the resulting arrow-type constructed
+        for a given CoSyLuigiTask.
 
         Returns:
-            Constructor: _description_
+            Constructor: A Constructor, uniquely identified by the class name.
         """
         return Constructor(cls.__name__)
 
     @classmethod
     def constraints(cls) -> Sequence[Callable[..., bool]]:
-        """_summary_.
+        """The Callables returned by this class are translated into constraints applied to the resulting combinator's
+        types. This method is intended to be overridden in subclasses to make use of this feature. The returned
+        Callables are directly passed to a SpecificationBuilder as a .constraint() call.
 
         Returns:
-            Sequence[Callable[..., bool]]: _description_
+            Sequence[Callable[..., bool]]: A sequence of constraints.
         """
         return []
 
     @classmethod
     def __constraints(cls) -> Sequence[Callable[..., bool]]:
-        """_summary_.
+        """This method computes the auto-generated constraints that results from features that are part of the
+        framework itself. For instance, the unique_across_prior_tasks flag is implemented by adding a constraint,
+        this method creates the corresponding Callables.
 
         Returns:
-            Sequence[Callable[..., bool]]: _description_
+            Sequence[Callable[..., bool]]: The auto-generated constraints.
         """
         from cosy_luigi.constraints.unique import _is_unique_in_prior_tasks  # noqa: PLC0415
 
@@ -194,10 +218,10 @@ class CoSyLuigiTask(luigi.Task):
 
     @classmethod
     def combinator_type(cls) -> Specification:
-        """_summary_.
+        """Computes the resulting type of the combinator represented by this class, as described in the methods referenced by this method.
 
         Returns:
-            Specification: _description_
+            Specification: The type of the combinator.
         """
         sp = SpecificationBuilder()
         for name in [v.required_task.__name__ for v in cls._requirements().values()]:
@@ -210,10 +234,13 @@ class CoSyLuigiTask(luigi.Task):
 
     @classmethod
     def combinator(cls) -> tuple[str, Callable[..., CoSyLuigiTask], Specification]:
-        """_summary_.
+        """Produces the typed combinator representing this class. Classes with no requirements are instantiated as
+        is, while classes with requirements have the resulting values for their task-parameters passed as varargs.
+        Note that it is not necessary to use kwargs here, as the generation of the type guarantees that the order of
+        passed args and CoSyLuigiTaskParameters aligns.
 
         Returns:
-            tuple[str, Callable[..., CoSyLuigiTask], Specification]: _description_
+            tuple[str, Callable[..., CoSyLuigiTask], Specification]: The resulting combinator.
         """
         if len(cls._requirements()) == 0:
             return cls.__name__, lambda: cls(), cls.combinator_type()
