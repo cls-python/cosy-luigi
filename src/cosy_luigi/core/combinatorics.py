@@ -1,4 +1,4 @@
-"""_summary_."""
+"""Contains the classes that provide the core functionality of modeling pipelines with CoSy-Luigi."""
 
 from __future__ import annotations
 
@@ -248,12 +248,15 @@ class CoSyLuigiTask(luigi.Task):
 
 
 class CoSyLuigiRepo:
-    """_summary_.
+    """Serves as the repository that Combinatory Logic Synthesis requires for type inhabitation. Unlike the previous
+    version of CoSy-Luigi, known as CLS-Luigi, having an explicit repository prevents side-effects that may occur by
+    collecting all CoSyLuigiTasks via reflection. Another important task of the CoSyLuigiRepo is to translate the
+    observed class hierarchy into a taxonomy that the CoSy framework understands during synthesis.
 
     Attributes:
-        luigi_repo (set[type[CoSyLuigiTask]]): _description_
-        taxonomy (Mapping[str, set[str]]): _description_
-        cls_repo (list[tuple[str, Callable, Specification]]): _description_
+        luigi_repo (set[type[CoSyLuigiTask]]): The set of CoSyLuigiTask types that constitute the repositories' combinators.
+        taxonomy (Mapping[str, set[str]]): The taxonomy that describes the class hierarchy of the luigi_repo.
+        cls_repo (list[tuple[str, Callable, Specification]]): The final repository that can be passed to the CoSy framework.
     """
 
     def __init__(self, *tasks: type[CoSyLuigiTask] | Sequence[type[CoSyLuigiTask]]):
@@ -261,10 +264,16 @@ class CoSyLuigiRepo:
 
         # This doesn't technically need to unpack as flatten could be typed to accept packed tuples
         # But performance is equivalent/faster because the first layer doesn't need to be checked this way
-        """_summary_.
+        """Initializes the CoSyLuigiRepo. The passed arbitrarily nested Sequence is flattened and converted into a
+        set. Please see the documentation of flatten, as it adds some features to the flattening. The taxonomy is
+        then computed by examining the method resolution order of each CoSyLuigiTask type, up to the most abstract
+        possible CoSyLuigiTask itself.
+
+        Also performs rudimentary inspection of the repositories' contents, currently only checks if any set
+        unique_in_prior_tasks flags make logical sense.
 
         Args:
-            *tasks (type[CoSyLuigiTask] | Sequence[type[CoSyLuigiTask]]): _description_
+            *tasks (type[CoSyLuigiTask] | Sequence[type[CoSyLuigiTask]]): An arbitrarily nested Sequence where leaves are CoSyLuigiTasks' types.
         """
         from cosy_luigi.utils import flatten  # noqa: PLC0415
 
@@ -280,11 +289,14 @@ class CoSyLuigiRepo:
                     self.taxonomy[task.__name__].add(tpe.__name__)
 
     def check_unique_in_prior_tasks_sanity(self):
-        """_summary_."""
+        """Checks if the unique_in_prior_tasks flags set on CoSyLuigiTaskParameters make logical sense. If a required
+        task is set to be unique throughout pipelines, but there are no subclasses of it present, i.e. no variance is
+        possible, remind the user that this is nonsensical.
+        """
         for source_task, param_name, required_type in [
-            (task, k, required_unique_task.required_task)
+            (task, _, required_unique_task.required_task)
             for task in self.luigi_repo
-            for k, required_unique_task in task.requirements_unique_in_prior_tasks().items()
+            for _, required_unique_task in task.requirements_unique_in_prior_tasks().items()
             if not any(
                 issubclass(task, required_unique_task.required_task) and task is not required_unique_task.required_task
                 for task in self.luigi_repo
