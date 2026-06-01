@@ -1,4 +1,4 @@
-"""_summary_."""
+"""Contains helper methods centered around traversing collections or pipelines in ways specific to CoSy-Luigi."""
 
 from __future__ import annotations
 
@@ -16,13 +16,16 @@ if TYPE_CHECKING:
 def flatten(
     *heterogeneous_task_collection: type[CoSyLuigiTask] | Iterable[type[CoSyLuigiTask]],
 ) -> Iterable[type[CoSyLuigiTask]]:
-    """_summary_.
+    """Takes an arbitrarily nested Sequence where the leaves of the nested structure are CoSyLuigiTasks' types and
+    flattens it. During flattening, if an abstract Task type is encountered, it is instead expanded into the set of
+    its implementing subclasses and becomes part of the flattening procedure, i.e. also multiple levels of
+    abstraction are correctly handled. See the corresponding test_abstract_variant_expansion.py for an example.
 
     Args:
-        *heterogeneous_task_collection (type[CoSyLuigiTask] | Sequence[type[CoSyLuigiTask]]): _description_
+        *heterogeneous_task_collection (type[CoSyLuigiTask] | Sequence[type[CoSyLuigiTask]]): An arbitrarily nested Sequence where leaves are CoSyLuigiTasks' types.
 
     Returns:
-         Iterable[type[CoSyLuigiTask]]: _description_
+         Iterable[type[CoSyLuigiTask]]: The flattened representation of *heterogeneous_task_collection.
     """
     return (
         task  # type: ignore # guaranteed by recursion to be a type[CoSyLuigiTask] instead of an Iterable itself
@@ -39,30 +42,31 @@ def flatten(
 
 
 def _traverse_pipeline(vs: Sequence[CoSyLuigiTask] | Iterable[CoSyLuigiTask]) -> Sequence[CoSyLuigiTask]:
-    """_summary_.
+    """Recursively traverses a pipeline's structure and collect all encountered tasks.
 
     Args:
-        vs (Sequence[CoSyLuigiTask] | Iterable[CoSyLuigiTask]): _description_
+        vs (Sequence[CoSyLuigiTask] | Iterable[CoSyLuigiTask]): The previously encountered tasks.
 
     Returns:
-        Sequence[CoSyLuigiTask]: _description_
+        Sequence[CoSyLuigiTask]: The encountered tasks.
     """
     result: list[CoSyLuigiTask] = [*vs]
     for v in vs:
-        result.extend(traverse_pipeline(v.requires().values()))
+        result.extend(_traverse_pipeline(v.requires().values()))
     return result
 
 
 def traverse_pipeline(
     to_traverse: CoSyLuigiTask | Sequence[CoSyLuigiTask] | Iterable[CoSyLuigiTask],
 ) -> Sequence[CoSyLuigiTask]:
-    """_summary_.
+    """Recursively traverses a pipeline's structure and collect all encountered tasks. Wraps _traverse_pipeline to
+    allow direct root task of a Pipeline to be passed.
 
     Args:
-        to_traverse (CoSyLuigiTask | Sequence[CoSyLuigiTask] | Iterable[CoSyLuigiTask]): _description_
+        to_traverse (CoSyLuigiTask | Sequence[CoSyLuigiTask] | Iterable[CoSyLuigiTask]): The pipeline to be traversed.
 
     Returns:
-        Sequence[CoSyLuigiTask]: _description_
+        Sequence[CoSyLuigiTask]: All tasks contained in the pipeline.
     """
     return (
         _traverse_pipeline([to_traverse]) if isinstance(to_traverse, CoSyLuigiTask) else _traverse_pipeline(to_traverse)

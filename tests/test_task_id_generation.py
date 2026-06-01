@@ -1,4 +1,13 @@
-"""_summary_."""
+"""Tests if the task_id generation for CoSyLuigiTasks is working as intended, preventing shading from happening.
+Shading is defined to be a task that looks identical to another task, because it has the same required tasks and the
+same name as another task, however tasks that are more than one step earlier in the pipeline still alter its outputs.
+In this case, the task_id that CoSyLuigiTask sets must signal this to the Luigi scheduler, so that it knows that
+these tasks are different pipelines. This can happen due to CoSy-Luigi operating on the logic that a task having an
+output depending on prior tasks means introducing ad-hoc polymorphism.
+
+In short, CoSy-Luigi considers tasks with identical names, identical requirements, and identical outputs to be
+Singletons. This differs from Luigi, which considers tasks with identical names and identical requirements
+Singletons. This means Luigi allows shading, and CoSy-Luigi does not."""
 
 from abc import ABC
 
@@ -16,69 +25,72 @@ fs = target_a.fs
 
 
 class Shaded(CoSyLuigiTask, ABC):
-    """_summary_."""
+    """Abstract base class for shaded tasks."""
 
     identifier: str
 
 
 class ShadedA(Shaded):
-    """_summary_."""
+    """An example for a class that can be shaded."""
 
     identifier = "A"
 
 
 class ShadedB(Shaded):
-    """_summary_."""
+    """An example of a class that can be shaded."""
 
     identifier = "B"
 
 
 class Shade(CoSyLuigiTask):
-    """_summary_."""
+    """Shades either ShadedA or ShadedB. They are shaded because this task gives no indication of the contents of the
+    shaded CoSyLuigiTaskParameter as part of the signature that classes requesting this task see, i.e. a Shade(
+    ShadeA()) and Shade(ShadeB()) looks identical to Evaluate at Runtime."""
 
     shaded = CoSyLuigiTaskParameter(Shaded)
 
     def complete(self):
-        """_summary_.
+        """Marks this class as always complete (avoids needing an output for testing).
 
         Returns:
-            _type_: _description_
+            bool: True
         """
         return True
 
 
 class Evaluate(CoSyLuigiTask):
-    """_summary_."""
+    """Behaves as either a Singleton or as different Pipelines depending on how task_ids are assigned. Correct
+    behaviour is the latter."""
 
     shade = CoSyLuigiTaskParameter(Shade)
 
     def run(self):
-        """_summary_."""
+        """Write "OK". into the task's output file."""
         with self.output()["output"].open("w") as f:
             f.write("OK.")
 
     def output(self):
-        """_summary_.
+        """This task creates a different output and thus is intended to act as a different task.
 
         Returns:
-            _type_: _description_
+            Mapping[str, MockTarget]: An output with a different name depending on the shaded task.
         """
         return {"output": MockTarget(self.shade.shaded.identifier)}
 
 
 class EvaluateWithPotentialToShade(Evaluate):
-    """_summary_.
+    """Behaves as a Singleton, showcases what happens when using the default task_id allocation of Luigi.
 
     Attributes:
-        task_id (_type_): _description_
+        task_id (str): The task_id that Luigi would assign.
     """
 
     def __init__(self, *args, **kwargs):
-        """_summary_.
+        """Initializes the task and overrides the task_id with the default allocation from Luigi.
 
         Args:
-            *args (_type_): _description_
-            **kwargs (_type_): _description_
+            *args (_type_): Passed through to super().__init__().
+            **kwargs (_type_): Passed through to super().__init__().
         """
         super().__init__(*args, **kwargs)
         # Copy the behaviour of regular Luigi
@@ -88,29 +100,29 @@ class EvaluateWithPotentialToShade(Evaluate):
 
 @pytest.fixture
 def repo():
-    """_summary_.
+    """Creates a CoSyLuigiRepo for testing.
 
     Returns:
-        _type_: _description_
+        CoSyLuigiRepo: The CoSyLuigiRepo for testing.
     """
     return CoSyLuigiRepo(Evaluate, Shade, Shaded)
 
 
 @pytest.fixture
 def shadeable_repo():
-    """_summary_.
+    """Creates a CoSyLuigiRepo for testing that allows shading to happen.
 
     Returns:
-        _type_: _description_
+        CoSyLuigiRepo: The CoSyLuigiRepo for testing.
     """
     return CoSyLuigiRepo(EvaluateWithPotentialToShade, Shade, Shaded)
 
 
 def test_shading_not_possible(repo):
-    """_summary_.
+    """Tests that shading does not occur when using the task_id that CoSyLuigiTask computes.
 
     Args:
-        repo (_type_): _description_
+        repo (CoSyLuigiRepo): The CoSyLuigiRepo for testing.
     """
     fs.clear()
     assert not target_a.exists()
@@ -125,10 +137,10 @@ def test_shading_not_possible(repo):
 
 
 def test_shading_would_be_possible(shadeable_repo):
-    """_summary_.
+    """Tests that shading occurs when using the task_id default to Luigi.
 
     Args:
-        shadeable_repo (_type_): _description_
+        repo (CoSyLuigiRepo): The CoSyLuigiRepo containing the overridden CoSyLuigiTask that allows for shading.
     """
     fs.clear()
     assert not target_a.exists()
@@ -142,16 +154,17 @@ def test_shading_would_be_possible(shadeable_repo):
 
 
 def test_output_mapping_is_enforced():
-    """_summary_."""
+    """Computing the task_ids for CoSyLuigiTasks assumes that the outputs are Mapping[str, Target]. Tests that this
+    enforced."""
 
     class TaskWithWrongOutputA(CoSyLuigiTask):
-        """_summary_."""
+        """Class with a wrong output mapping."""
 
         def output(self):
-            """_summary_.
+            """Does not return a Mapping but a raw Target object.
 
             Returns:
-                _type_: _description_
+                MockTarget: The Target object.
             """
             return MockTarget("")
 
@@ -159,13 +172,13 @@ def test_output_mapping_is_enforced():
         TaskWithWrongOutputA()
 
     class TaskWithWrongOutputB(CoSyLuigiTask):
-        """_summary_."""
+        """Class with a wrong output mapping."""
 
         def output(self):
-            """_summary_.
+            """Does not return a Mapping but a Target object wrapped in a list.
 
             Returns:
-                _type_: _description_
+                list[MockTarget]: A list of Target objects.
             """
             return [MockTarget("")]
 
@@ -173,6 +186,7 @@ def test_output_mapping_is_enforced():
         TaskWithWrongOutputB()
 
     class TaskWithNoneOutput(CoSyLuigiTask):
-        """_summary_."""
+        """A class with no outputs."""
 
+    # This is explicitly allowed, as having no output means this class is never ad-hoc polymorphic.
     TaskWithNoneOutput()
