@@ -1,4 +1,4 @@
-"""_summary_."""
+"""Tests that the unique_in_prior_tasks constraint works as expected."""
 
 import logging
 from abc import ABC
@@ -12,67 +12,72 @@ from cosy_luigi.constraints import is_unique_in_prior_tasks
 
 
 class ScaleDataABC(CoSyLuigiTask, ABC):
-    """_summary_."""
+    """Abstract class for Scalers."""
 
 
 class ScaleData(ScaleDataABC):
-    """_summary_."""
+    """Concrete class for Scalers."""
 
 
 class ScaleDataVariantA(ScaleData):
-    """_summary_."""
+    """A specific variant of a concrete scaler."""
 
 
 class ScaleDataVariantB(ScaleData):
-    """_summary_."""
+    """A specific variant of a concrete scaler."""
 
 
 class TrainModel(CoSyLuigiTask, ABC):
-    """_summary_."""
+    """Abstract class for training a model."""
 
     scaled_data = CoSyLuigiTaskParameter(ScaleDataABC)
 
 
 class TrainModelVariantA(TrainModel):
-    """_summary_."""
+    """A concrete model to train."""
 
 
 class TrainModelVariantB(TrainModel):
-    """_summary_."""
+    """A concrete model to train."""
 
 
 class EvaluatePipelineWithUniqueScaler(CoSyLuigiTask):
-    """_summary_."""
+    """Pipeline class that uses flag of CoSyLuigiTaskParameter to ensure that the same scaler is used throughout the
+    pipeline."""
 
     train_model = CoSyLuigiTaskParameter(TrainModel)
     scaled_data = CoSyLuigiTaskParameter(ScaleDataABC, unique_across_prior_tasks=True)
 
 
 class EvaluatePipelineWithConstraintUniqueScaler(CoSyLuigiTask):
-    """_summary_."""
+    """Pipeline class that uses constraints.is_unique_in_prior_tasks to construct a constraint that ensures that the
+    same scaler is used throughout the pipeline."""
 
     train_model = CoSyLuigiTaskParameter(TrainModel)
     scaled_data = CoSyLuigiTaskParameter(ScaleDataABC)
 
     @classmethod
     def constraints(cls) -> Sequence[Callable[..., bool]]:
-        """_summary_.
+        """Overrides the constraints method with a concrete constraint that ensures that the same subclass of
+        ScaleDataABC is used throughout each pipeline.
 
         Returns:
-            Sequence[Callable[..., bool]]: _description_
+            Sequence[Callable[..., bool]]: The constraints.
         """
         return [lambda vs: is_unique_in_prior_tasks(vs, ScaleDataABC)]
 
 
 class EvaluatePipelineWithUniqueScalerAndNonAbstractSuper(CoSyLuigiTask):
-    """_summary_."""
+    """Pipeline class that uses constraints.is_unique_in_prior_tasks to construct a constraint that ensures that the
+    same scaler is used throughout the pipeline. Instead of an abstract class for the constraint, uses a concrete
+    class with subclasses."""
 
     train_model = CoSyLuigiTaskParameter(TrainModel)
     scaled_data = CoSyLuigiTaskParameter(ScaleData, unique_across_prior_tasks=True)
 
 
 class EvaluatePipeline(CoSyLuigiTask):
-    """_summary_."""
+    """Pipeline class without constraints."""
 
     train_model = CoSyLuigiTaskParameter(TrainModel)
     scaled_data = CoSyLuigiTaskParameter(ScaleDataABC)
@@ -80,40 +85,40 @@ class EvaluatePipeline(CoSyLuigiTask):
 
 @pytest.fixture
 def repo_without_constraints() -> CoSyLuigiRepo:
-    """_summary_.
+    """Constructs a CoSyLuigiRepo with no constraints.
 
     Returns:
-        CoSyLuigiRepo: _description_
+        CoSyLuigiRepo: The CoSyLuigiRepo with no constraints.
     """
     return CoSyLuigiRepo(TrainModel, ScaleDataABC, EvaluatePipeline)
 
 
 @pytest.fixture
 def repo_with_constraints() -> CoSyLuigiRepo:
-    """_summary_.
+    """Constructs a CoSyLuigiRepo with constraints set on the CoSyLuigiTaskParameter.
 
     Returns:
-        CoSyLuigiRepo: _description_
+        CoSyLuigiRepo: The CoSyLuigiRepo with constraints.
     """
     return CoSyLuigiRepo(TrainModel, ScaleDataABC, EvaluatePipelineWithUniqueScaler)
 
 
 @pytest.fixture
 def repo_with_manual_constraints() -> CoSyLuigiRepo:
-    """_summary_.
+    """Constructs a CoSyLuigiRepo with constraints set by overriding the constraints method.
 
     Returns:
-        CoSyLuigiRepo: _description_
+        CoSyLuigiRepo: The CoSyLuigiRepo with constraints.
     """
     return CoSyLuigiRepo(TrainModel, ScaleDataABC, EvaluatePipelineWithConstraintUniqueScaler)
 
 
 @pytest.fixture
 def repo_with_non_abstract_super() -> CoSyLuigiRepo:
-    """_summary_.
+    """Constructs a CoSyLuigiRepo with constraints set on a non-abstract CoSyLuigiTaskParameter.
 
     Returns:
-        CoSyLuigiRepo: _description_
+        CoSyLuigiRepo: The CoSyLuigiRepo with constraints.
     """
     return CoSyLuigiRepo(
         TrainModel, ScaleData, ScaleDataVariantA, ScaleDataVariantB, EvaluatePipelineWithUniqueScalerAndNonAbstractSuper
@@ -121,10 +126,11 @@ def repo_with_non_abstract_super() -> CoSyLuigiRepo:
 
 
 def test_implementation_is_not_unique_across_prior_tasks(repo_without_constraints: CoSyLuigiRepo):
-    """_summary_.
+    """Tests that without constraints there are unwanted pipeline variations where the only variance is using scalers
+    inconsistently.
 
     Args:
-        repo_without_constraints (CoSyLuigiRepo): _description_
+        repo_without_constraints (CoSyLuigiRepo): The CoSyLuigiRepo without constraints.
     """
     maestro = Maestro(
         repo_without_constraints.cls_repo,
@@ -135,10 +141,11 @@ def test_implementation_is_not_unique_across_prior_tasks(repo_without_constraint
 
 
 def test_implementation_is_unique_across_prior_tasks(repo_with_constraints: CoSyLuigiRepo):
-    """_summary_.
+    """Test that with constraints applied to the CoSyLuigiTaskParameter there are no variants with inconsistent
+    scaler usage.
 
     Args:
-        repo_with_constraints (CoSyLuigiRepo): _description_
+        repo_with_constraints (CoSyLuigiRepo): The CoSyLuigiRepo with constraints.
     """
     maestro = Maestro(
         repo_with_constraints.cls_repo,
@@ -153,10 +160,11 @@ def test_implementation_is_unique_across_prior_tasks(repo_with_constraints: CoSy
 def test_implementation_is_unique_across_prior_tasks_with_manual_constraint(
     repo_with_manual_constraints: CoSyLuigiRepo,
 ):
-    """_summary_.
+    """Test that with constraints applied by overriding the constraints method there are no variants with inconsistent
+    scaler usage.
 
     Args:
-        repo_with_manual_constraints (CoSyLuigiRepo): _description_
+        repo_with_manual_constraints (CoSyLuigiRepo): The CoSyLuigiRepo with constraints.
     """
     maestro = Maestro(
         repo_with_manual_constraints.cls_repo,
@@ -173,10 +181,11 @@ def test_implementation_is_unique_across_prior_tasks_with_manual_constraint(
 def test_implementation_is_unique_across_prior_tasks_with_non_abstract_super(
     repo_with_non_abstract_super: CoSyLuigiRepo,
 ):
-    """_summary_.
+    """Test that with constraints applied to the CoSyLuigiTaskParameter for a non-abstract class there are no
+    variants with inconsistent scaler usage.
 
     Args:
-        repo_with_non_abstract_super (CoSyLuigiRepo): _description_
+        repo_with_non_abstract_super (CoSyLuigiRepo): The CoSyLuigiRepo with constraints.
     """
     maestro = Maestro(
         repo_with_non_abstract_super.cls_repo,
@@ -191,10 +200,10 @@ def test_implementation_is_unique_across_prior_tasks_with_non_abstract_super(
 
 
 def test_warning_if_unique_across_prior_tasks_but_no_variance(caplog):
-    """_summary_.
+    """Tests that the inspection whether constraints are used on something that can not exhibit variance works.
 
     Args:
-        caplog (_type_): _description_
+        caplog (Generator[LogCaptureFixture, None, None]): Captures the logging output to verify inspector message.
     """
     caplog.set_level(logging.WARNING)
     repo_with_constraints_and_no_variance = CoSyLuigiRepo(

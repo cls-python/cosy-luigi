@@ -29,7 +29,7 @@ class CoSyLuigiTaskParameter(luigi.TaskParameter):
 
     Attributes:
         required_task (type[CoSyLuigiTask]): The type of CoSyLuigiTask this parameter wraps.
-        unique_across_prior_tasks (bool): Whether or not to enforce that all concrete occurences of the potentially abstract wrapped type need to be the same.
+        unique_across_prior_tasks (bool): Whether or not to enforce that all concrete occurrences of the potentially abstract wrapped type need to be the same.
     """
 
     def __init__(self, required_task: type[CoSyLuigiTask], *, unique_across_prior_tasks: bool = False):
@@ -38,7 +38,7 @@ class CoSyLuigiTaskParameter(luigi.TaskParameter):
 
         Args:
             required_task (type[CoSyLuigiTask]): The type of CoSyLuigiTask this parameter wraps.
-            unique_across_prior_tasks (bool): Whether or not to enforce that all concrete occurences of the potentially abstract wrapped type need to be the same.
+            unique_across_prior_tasks (bool): Whether or not to enforce that all concrete occurrences of the potentially abstract wrapped type need to be the same.
         """
         super().__init__()
         self.required_task = required_task

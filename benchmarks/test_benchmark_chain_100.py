@@ -13,46 +13,48 @@ counter = itertools.count()
 
 
 class ChainLink(CoSyLuigiTask, ABC):
-    """_summary_."""
+    """An abstract class representing a chain link in an infinite chain."""
 
     chain_link: CoSyLuigiTaskParameter | None
 
 
 class StartingLink(ChainLink):
-    """_summary_."""
+    """A class that terminates the chain by needing no further chain links."""
 
     chain_link = None
 
 
 class RepeatingLink(ChainLink):
-    """_summary_."""
+    """A class that recurses the chain by requiring a further chain link."""
 
     chain_link = CoSyLuigiTaskParameter(ChainLink)
 
     def output(self):
-        """_summary_.
+        """Assign each chain link a unique identifier. This is required because CoSy-Luigi considers tasks with
+        identical names, identical requirements, and identical outputs to be Singletons. This differs from Luigi,
+        which considers tasks with identical names and identical requirements Singletons.
 
         Returns:
-            _type_: _description_
+            Mapping[str, MockTarget]_: The named unique target for each chain link.
         """
         return {"counter": MockTarget(str(next(counter)))}
 
 
 @pytest.fixture
 def repo():
-    """_summary_.
+    """Creates a CoSyLuigiRepo that contains the StartingLink and the RepeatingLink.
 
     Returns:
-        _type_: _description_
+        CoSyLuigiRepo: The created CoSyLuigiRepo.
     """
     return CoSyLuigiRepo(ChainLink)
 
 
 def create_infinite_chain(repo):
-    """_summary_.
+    """Synthesizes all pipelines up to those that carry out the same step 100 times.
 
     Args:
-        repo (_type_): _description_
+        repo (CoSyLuigiRepo): The repository to use for synthesis.
     """
     maestro = Maestro(
         repo.cls_repo,
@@ -62,11 +64,11 @@ def create_infinite_chain(repo):
 
 
 def test_benchmark_chain_creation(repo, benchmark):
-    """_summary_.
+    """Benchmarks how long synthesizing and enumerating the pipelines takes.
 
     Args:
-        repo (_type_): _description_
-        benchmark (_type_): _description_
+        repo (CoSyLuigiRepo): The repository to use for synthesis.
+        benchmark (BenchmarkFixture): The benchmark fixture.
     """
     benchmark(create_infinite_chain, repo)
 

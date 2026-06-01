@@ -1,4 +1,5 @@
-"""_summary_."""
+"""Contains the function for the constraint that makes a required task be unique throughout all prior tasks in a
+pipeline."""
 
 from __future__ import annotations
 
@@ -16,14 +17,20 @@ if TYPE_CHECKING:
 def _is_unique_in_prior_tasks(
     vs: Mapping[str, CoSyLuigiTask], required_to_be_unique: Sequence[type[CoSyLuigiTask]]
 ) -> bool:
-    """_summary_.
+    """Examines the output of traverse_pipeline against a Sequence of CoSyLuigiTask's types that are intended to be
+    unique. Whenever a task that is a subclass or the required to be unique class itself is encountered in the
+    pipeline, remember the encountered task. If any further task that is a subclass that is not identical to the
+    previously encountered task is encountered, return False, else return True.
+
+    Encountering two different subclasses within the same pipeline for given required to be unique tasks means that
+    it is not unique.
 
     Args:
-        vs (Mapping[str, CoSyLuigiTask]): _description_
-        required_to_be_unique (Sequence[type[CoSyLuigiTask]]): _description_
+        vs (Mapping[str, CoSyLuigiTask]): The variables passed to the function by CoSy during synthesis. Populated by the partial pipelines beginning at current tasks required tasks.
+        required_to_be_unique (Sequence[type[CoSyLuigiTask]]): The CoSyLuigiTasks' types that are intended to be unique.
 
     Returns:
-        bool: _description_
+        bool: True if all types contained in required_to_be_unique are unique, False otherwise.
     """
     classes = [pc.__class__ for pc in traverse_pipeline(vs.values())]
     seen_subclasses: dict[type[CoSyLuigiTask], type[CoSyLuigiTask]] = {}
@@ -41,14 +48,15 @@ def _is_unique_in_prior_tasks(
 def is_unique_in_prior_tasks(
     vs: Mapping[str, CoSyLuigiTask], required_to_be_unique: type[CoSyLuigiTask] | Sequence[type[CoSyLuigiTask]]
 ) -> bool:
-    """_summary_.
+    """Wrapper around _is_unique_in_prior_tasks that allows passing either a single type of a CoSyLuigiTask or a
+    Sequence of CoSyLuigiTasks' types.
 
     Args:
-        vs (Mapping[str, CoSyLuigiTask]): _description_
-        required_to_be_unique (type[CoSyLuigiTask] | Sequence[type[CoSyLuigiTask]]): _description_
+        vs (Mapping[str, CoSyLuigiTask]): The variables passed to the function by CoSy during synthesis. Populated by the partial pipelines beginning at current tasks required tasks.
+        required_to_be_unique (type[CoSyLuigiTask] | Sequence[type[CoSyLuigiTask]]): The CoSyLuigiTask's type or types that are intended to be unique.
 
     Returns:
-        bool: _description_
+        bool: True if all types contained in required_to_be_unique are unique, False otherwise.
     """
     return _is_unique_in_prior_tasks(
         vs,
