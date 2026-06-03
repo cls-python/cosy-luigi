@@ -131,7 +131,7 @@ def test_shading_not_possible(repo):
         repo.cls_repo,
         repo.taxonomy,
     )
-    luigi.build(list(maestro.query(Evaluate.target())), local_scheduler=True, detailed_summary=True)
+    luigi.build(maestro.query(Evaluate.target()), local_scheduler=True, detailed_summary=True)
     assert target_a.exists()
     assert target_b.exists()
 
@@ -149,7 +149,7 @@ def test_shading_would_be_possible(shadeable_repo):
         shadeable_repo.cls_repo,
         shadeable_repo.taxonomy,
     )
-    luigi.build(list(maestro.query(EvaluateWithPotentialToShade.target())), local_scheduler=True, detailed_summary=True)
+    luigi.build(maestro.query(EvaluateWithPotentialToShade.target()), local_scheduler=True, detailed_summary=True)
     assert not (target_a.exists() and target_b.exists())
 
 

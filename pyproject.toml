@@ -24,7 +24,7 @@ classifiers = [
   "Programming Language :: Python :: Implementation :: PyPy",
 ]
 dependencies = [
-    "combinatory-synthesizer==0.0.1.dev24",
+    "combinatory-synthesizer==0.0.1.dev29",
     "luigi==3.8.0"
 ]
 

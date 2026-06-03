@@ -36,13 +36,14 @@ if __name__ == "__main__":
         TaskB,
     )
     maestro = Maestro(repo.cls_repo, repo.taxonomy)
-    results = list(maestro.query(TaskB.target()))
+    results = maestro.query(TaskB.target())
     luigi.build(results, local_scheduler=True, detailed_summary=True)
     print(
         textwrap.dedent(
             f"""
                 ===============================================
-                    There are a total of {len(results)} results
+                    There are a total of {len(list(results))} results
                 ==============================================="""
         )
     )
+    results.visualize()

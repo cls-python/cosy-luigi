@@ -161,13 +161,14 @@ if __name__ == "__main__":
     )
     print(PredictDemand.get_all_variants())
     maestro = Maestro(repo.cls_repo, repo.taxonomy)
-    results = list(maestro.query(OptimizeLots.target()))
+    results = maestro.query(OptimizeLots.target())
     luigi.build(results, local_scheduler=True, detailed_summary=True)
     print(
         textwrap.dedent(
             f"""
             ===============================================
-                There are a total of {len(results)} results
+                There are a total of {len(list(results))} results
             ==============================================="""
         )
     )
+    results.visualize()
