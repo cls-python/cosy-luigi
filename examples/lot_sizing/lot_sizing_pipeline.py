@@ -152,6 +152,13 @@ class OptimizeLotsByPartPeriod(OptimizeLots):
         return optimizer.run(cost, demand)
 
 
+
+
+
+
+
+
+
 if __name__ == "__main__":
     repo = CoSyLuigiRepo(
         GetCosts,
@@ -159,6 +166,10 @@ if __name__ == "__main__":
         PredictDemand,
         OptimizeLots,
     )
+
+    from cosy_luigi.utils.visualize_template import render_repo_template
+    render_repo_template(repo, str(Path(__file__).parent / "data" / "lot_sizing_pipeline"))
+
     print(PredictDemand.get_all_variants())
     maestro = Maestro(repo.cls_repo, repo.taxonomy)
     results = maestro.query(OptimizeLots.target())
