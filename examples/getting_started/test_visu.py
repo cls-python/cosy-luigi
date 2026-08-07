@@ -1,5 +1,5 @@
 import textwrap
-from abc import ABC
+from abc import ABC,abstractmethod
 from string import Template
 
 import luigi
@@ -35,20 +35,40 @@ class SubstituteNameTask(CoSyLuigiTask, ABC):
 class SubstituteNameByJohnDoeTask(SubstituteNameTask):
     name = "John Doe"
 
+class SubstituteByNameAndTitleTask(SubstituteNameTask, ABC):
+    title: str = None
 
-class SubstituteNameByJaneDoeTask(SubstituteNameTask):
+    def run(self):
+        with self.input()["template_task"]["template"].open() as input_template:
+            template = Template(input_template.read())
+            result = template.substitute(name=(self.title + " " + self.name))
+            with self.output()["filled_template"].open("w") as outfile:
+                outfile.write(result)
+
+
+class SubstituteNameByMsJaneDoeTask(SubstituteByNameAndTitleTask):
     name = "Jane Doe"
+    title = "Ms."
+
+
+class SubstituteNameByMrJohnDoeTask(SubstituteByNameAndTitleTask):
+    name = "John Doe"
+    title = "Mr."
 
 
 def main():
     repo = CoSyLuigiRepo(
         WriteTemplateTask, 
-        SubstituteNameTask
+        SubstituteNameTask,
+        SubstituteByNameAndTitleTask,
+        SubstituteNameByMrJohnDoeTask,
+        SubstituteNameByMsJaneDoeTask,
+        SubstituteNameByJohnDoeTask
         )
 
     from pathlib import Path
     from cosy_luigi.utils.visualize_template import render_repo_template
-    render_repo_template(repo, str(Path(__file__).parent / "variation_example"))
+    render_repo_template(repo,  "output/test_visu")
 
     maestro = Maestro(repo.cls_repo, repo.taxonomy)
     results = maestro.query(SubstituteNameTask.target())
@@ -61,7 +81,7 @@ def main():
                 ==============================================="""
         )
     )
-    results.visualize()
+    # results.visualize()
 
 
 if __name__ == "__main__":
