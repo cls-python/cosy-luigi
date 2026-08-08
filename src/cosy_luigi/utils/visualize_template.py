@@ -39,17 +39,33 @@ def analyze(info, show_base=True):
     # gezeichnet werden, behandeln wir hier alle referenzierten Namen als Knoten.
     all_nodes = (set(concrete) | set(ancestors)) - base
 
+    # Wie viele konkrete Tasks im Repo haben n (transitiv) als Vorfahren? Je kleiner diese
+    # Abdeckung, desto spezifischer/naeher am Blatt ist n. Das funktioniert auch fuer
+    # Phantom-Knoten, die selbst keinen eigenen Eintrag in tax haben (siehe oben) - wir
+    # muessen dafuer nicht wissen, WEN n beerbt, nur WESSEN Vorfahre n selbst ist.
+    def coverage(n):
+        return sum(1 for c in concrete if n in tax.get(c, set()))
+
+    # Vorfahren-Menge eines Knotens. Fuer echte Repo-Mitglieder direkt aus tax bekannt. Fuer
+    # Phantom-Knoten (auch mehrstufig verschachtelt, z.B. wenn sowohl Elternteil als auch
+    # Grosselternteil selbst nie Schluessel in tax sind) gibt es keinen eigenen Eintrag - wir
+    # rekonstruieren ihn aus dem Schnitt der Vorfahren-Mengen ALLER konkreten Tasks, die n als
+    # Vorfahren fuehren: was die alle gemeinsam haben, muss n selbst geerbt haben.
+    def node_ancestors(n):
+        if n in tax:
+            return tax[n]
+        covering = [tax[c] for c in concrete if n in tax[c]]
+        return set.intersection(*covering) - {n} if covering else set()
+
     # direkte Elternklasse eines Tasks = spezifischster Vorfahre (ohne Basisklasse).
-    # tax[c] ist nur eine ungeordnete Menge ALLER Vorfahren (beliebige Tiefe), daher waehlen
-    # wir davon denjenigen mit den meisten eigenen Vorfahren - der ist am weitesten "unten"
-    # in der Kette, also der naechste/spezifischste Vorfahre. Bei mehrstufiger Abstraktion
-    # (z.B. A -> B(ABC) -> C) landet so B als direkter Elternteil von C, nicht A. tax.get(c, set())
-    # statt tax[c], da Phantom-Knoten keinen eigenen Eintrag haben - fuer sie ist die
-    # Vorfahren-Menge dann leer und sie werden (korrekt) selbst zu einem Kopf.
+    # node_ancestors(c) ist nur eine ungeordnete Menge ALLER Vorfahren (beliebige Tiefe), daher
+    # waehlen wir davon denjenigen mit der kleinsten Abdeckung - der ist am weitesten "unten" in
+    # der Kette, also der naechste/spezifischste Vorfahre. Bei mehrstufiger Abstraktion
+    # (z.B. A -> B(ABC) -> C) landet so B als direkter Elternteil von C, nicht A.
     parent_of = {}
     for c in sorted(all_nodes):
-        specific = [p for p in tax.get(c, set()) if p not in base]
-        parent_of[c] = max(specific, key=lambda p: (len(tax.get(p, set())), p)) if specific else None
+        specific = [p for p in node_ancestors(c) if p not in base]
+        parent_of[c] = min(specific, key=lambda p: (coverage(p), p)) if specific else None
 
     # Kinder je Elternklasse - rekursiv ueber beliebig viele Ebenen, nicht nur eine
     children = defaultdict(list)
