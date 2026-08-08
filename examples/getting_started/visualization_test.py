@@ -10,11 +10,11 @@ from cosy_luigi import CoSyLuigiRepo, CoSyLuigiTask, CoSyLuigiTaskParameter
 
 class WriteTemplateTask(CoSyLuigiTask):
     def output(self):
-        return {"template": luigi.LocalTarget("output/hello_world_template.txt")}
+        return {"template": luigi.LocalTarget("output/substitute_name_template.txt")}
 
     def run(self):
         with self.output()["template"].open("w") as result:
-            result.write("Hello World $name")
+            result.write("Name: $name")
 
 
 class SubstituteNameTask(CoSyLuigiTask, ABC):
@@ -60,10 +60,6 @@ def main():
     repo = CoSyLuigiRepo(
         WriteTemplateTask, 
         SubstituteNameTask,
-        SubstituteByNameAndTitleTask,
-        SubstituteNameByMrJohnDoeTask,
-        SubstituteNameByMsJaneDoeTask,
-        SubstituteNameByJohnDoeTask
         )
 
     from pathlib import Path
