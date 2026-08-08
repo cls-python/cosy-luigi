@@ -4,13 +4,13 @@ from __future__ import annotations
 
 import inspect
 from abc import ABC
-from collections.abc import Sequence
+from collections.abc import Iterable, Sequence
 from typing import TYPE_CHECKING, cast
 
 from cosy_luigi import CoSyLuigiTask
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Sequence
+    from collections.abc import Sequence
 
 
 def flatten(
@@ -32,8 +32,12 @@ def flatten(
         for task_or_task_collection in heterogeneous_task_collection
         for task in (
             flatten(*cast("Iterable[type[CoSyLuigiTask]]", task_or_task_collection))
-            if isinstance(task_or_task_collection, (tuple, list))
-            else cast("type[CoSyLuigiTask]", task_or_task_collection).get_all_variants()
+            if isinstance(task_or_task_collection, Iterable)
+            else (
+                variant
+                for variant in cast("type[CoSyLuigiTask]", task_or_task_collection).get_all_variants()
+                if not (inspect.isabstract(variant) or ABC in variant.__bases__)
+            )
             if inspect.isabstract(task_or_task_collection)
             or ABC in cast("type[CoSyLuigiTask]", task_or_task_collection).__bases__
             else (task_or_task_collection,)
