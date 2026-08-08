@@ -46,9 +46,8 @@ def main():
         SubstituteNameTask
         )
 
-    from pathlib import Path
     from cosy_luigi.utils.visualize_template import render_repo_template
-    render_repo_template(repo, str(Path(__file__).parent / "variation_example"))
+    render_repo_template(repo, "output/variation_example")
 
     maestro = Maestro(repo.cls_repo, repo.taxonomy)
     results = maestro.query(SubstituteNameTask.target())

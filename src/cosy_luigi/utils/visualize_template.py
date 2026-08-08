@@ -27,31 +27,50 @@ def analyze(info, show_base=True):
     tax, req = info['taxonomy'], info['requires']
 
     concrete = list(tax.keys())
-    abstract = sorted({p for ps in tax.values() for p in ps})
+    ancestors = sorted({p for ps in tax.values() for p in ps})
 
     # Basisklasse = Elternteil (nahezu) aller konkreten Tasks -> keine Pipeline-Stufe
-    base = {a for a in abstract if sum(a in tax[c] for c in concrete) == len(concrete)}
+    base = {a for a in ancestors if sum(a in tax[c] for c in concrete) == len(concrete)}
 
-    # direkte Elternklasse eines Tasks = spezifischster Parent (ohne Basisklasse)
+    # Nicht nur tax.keys() sind Knoten: abstrakte Klassen, die direkt an CoSyLuigiRepo(...)
+    # uebergeben werden, werden von flatten() in ihre konkreten Varianten aufgeloest und
+    # tauchen deshalb NIE als eigener Schluessel in tax auf ("Phantom"-Knoten) - nur als
+    # Vorfahre in den tax-Werten anderer Klassen. Damit sie trotzdem als Pipeline-Stufen-Kopf
+    # gezeichnet werden, behandeln wir hier alle referenzierten Namen als Knoten.
+    all_nodes = (set(concrete) | set(ancestors)) - base
+
+    # direkte Elternklasse eines Tasks = spezifischster Vorfahre (ohne Basisklasse).
+    # tax[c] ist nur eine ungeordnete Menge ALLER Vorfahren (beliebige Tiefe), daher waehlen
+    # wir davon denjenigen mit den meisten eigenen Vorfahren - der ist am weitesten "unten"
+    # in der Kette, also der naechste/spezifischste Vorfahre. Bei mehrstufiger Abstraktion
+    # (z.B. A -> B(ABC) -> C) landet so B als direkter Elternteil von C, nicht A. tax.get(c, set())
+    # statt tax[c], da Phantom-Knoten keinen eigenen Eintrag haben - fuer sie ist die
+    # Vorfahren-Menge dann leer und sie werden (korrekt) selbst zu einem Kopf.
     parent_of = {}
-    for c in concrete:
-        specific = [p for p in tax[c] if p not in base]
-        parent_of[c] = specific[-1] if specific else None
+    for c in sorted(all_nodes):
+        specific = [p for p in tax.get(c, set()) if p not in base]
+        parent_of[c] = max(specific, key=lambda p: (len(tax.get(p, set())), p)) if specific else None
 
-    # Stufen-Koepfe: abstrakte Klassen (ohne Basis) + elternlose konkrete Tasks
-    heads = [a for a in abstract if a not in base]
-    heads += [c for c in concrete if parent_of[c] is None]
-
-    # Kinder je Kopf
+    # Kinder je Elternklasse - rekursiv ueber beliebig viele Ebenen, nicht nur eine
     children = defaultdict(list)
-    for c in concrete:
+    for c in sorted(all_nodes):
         if parent_of[c] is not None:
             children[parent_of[c]].append(c)
 
-    # Datenfluss auf Stufen-Ebene aggregieren:
-    # requires eines Tasks -> Kante von der benoetigten Stufe zur eigenen Stufe
+    # Stufen-Koepfe: Klassen ohne Elternteil im Repo (Wurzeln je Vererbungskette)
+    heads = [c for c in sorted(all_nodes) if parent_of[c] is None]
+
+    # abstrakt = hat mindestens eine Unterklasse im Repo (unabhaengig von der Tiefe)
+    abstract = sorted(children.keys())
+
+    # Datenfluss auf Stufen-Ebene aggregieren: requires eines Tasks -> Kante von der
+    # benoetigten Stufe zur eigenen Stufe. stage_of laeuft dazu die Elternkette bis zur
+    # Wurzel (dem Kopf der Pipeline-Stufe) hoch, unabhaengig davon wie viele Zwischen-
+    # Abstraktionsebenen dazwischen liegen.
     def stage_of(n):
-        return n if n in heads else parent_of.get(n, n)
+        while parent_of.get(n) is not None:
+            n = parent_of[n]
+        return n
 
     flow = set()
     for task, needs in req.items():
@@ -86,6 +105,17 @@ def toposort(nodes, edges):
 
 
 # ----------------------------------------------------------------- DOT-Bau
+def descendants(n, children):
+    """Sammelt rekursiv alle Nachkommen von n ueber beliebig viele Vererbungsebenen (nicht nur die direkten
+    Kinder), damit z.B. ein Cluster pro Pipeline-Stufe die komplette Unterklassen-Hierarchie umfasst."""
+    stack, seen = list(children.get(n, [])), []
+    while stack:
+        cur = stack.pop()
+        seen.append(cur)
+        stack.extend(children.get(cur, []))
+    return seen
+
+
 def build_dot(model, style=STYLE):
     S = style
     A, B = set(model['abstract']), set(model['base'])
@@ -107,11 +137,13 @@ def build_dot(model, style=STYLE):
          f'fontsize={S["fontsize"]}, margin="0.16,0.07"];',
          f'  edge [fontname="{S["font"]}", fontsize=10];']
 
-    # --- Knoten je Stufe in einem unsichtbaren Cluster
+    # --- Knoten je Stufe in einem unsichtbaren Cluster - Kopf plus ALLE Nachkommen,
+    # damit auch mehrstufige Abstraktion (Kopf -> Zwischenklasse -> konkrete Klasse) in
+    # derselben Spalte gruppiert bleibt statt ueber die ganze Breite verteilt zu werden.
     for i, h in enumerate(model['heads']):
         L.append(f"  subgraph cluster_{i} {{ style=invis;")
         L.append(node(h, "    "))
-        for c in model['children'][h]:
+        for c in descendants(h, model['children']):
             L.append(node(c, "    "))
         L.append("  }")
 
@@ -123,11 +155,13 @@ def build_dot(model, style=STYLE):
     # --- obere Reihe: alle Stufen-Koepfe auf gleichem Rang
     L.append("  { rank=same; " + "; ".join(f'"{h}"' for h in model['heads']) + "; }")
 
-    # --- Vererbung: Kopf -> Kind mit dir=back  => Pfeilspitze oben an der Elternklasse
+    # --- Vererbung: JEDES Eltern-Kind-Paar (nicht nur Kopf -> direktes Kind), damit
+    # mehrstufige Abstraktion korrekt dargestellt wird. dir=back => Pfeilspitze oben an
+    # der Elternklasse. Die Ranks tieferer Ebenen ergeben sich automatisch aus den Kanten.
     L.append(f'  edge [style=dashed, color="#555555", penwidth=1.0, arrowsize=0.8, dir=back];')
-    for h in model['heads']:
-        for c in model['children'][h]:
-            L.append(f'  "{h}" -> "{c}";')
+    for parent, kids in model['children'].items():
+        for c in kids:
+            L.append(f'  "{parent}" -> "{c}";')
 
     # --- Basisklasse: alle konkreten Tasks erben davon (dezent, ohne Layout-Einfluss)
     if S['show_base'] and model['base']:
