@@ -17,6 +17,14 @@ class ABCInheritedTask(CoSyLuigiTask, ABC):
     """An abstract class. This class is abstract because it inherits from ABC."""
 
 
+class ABCTaskFromABCInherited(ABCInheritedTask, ABC):
+    """An abstract class that implements ABCInheritedTask."""
+
+
+class DeeperConcreteTaskFromABCTaskFromABCInherited(ABCTaskFromABCInherited):
+    """A class that indirectly implements ABCInheritedTask by inheriting from ABCTaskFromABCInherited."""
+
+
 class ConcreteTaskFromABCInherited(ABCInheritedTask):
     """A class that implements ABCInheritedTask."""
 
@@ -81,7 +89,11 @@ def test_expansion_from_abc():
     """Tests if adding a class that is abstract because it inherits from ABC expands to all of its subclasses when
     added to a CoSyLuigiRepo."""
     repo = CoSyLuigiRepo(ABCInheritedTask)
-    assert repo.luigi_repo == {ConcreteTaskFromABCInherited, DeeperConcreteTaskFromABCInherited}
+    assert repo.luigi_repo == {
+        ConcreteTaskFromABCInherited,
+        DeeperConcreteTaskFromABCInherited,
+        DeeperConcreteTaskFromABCTaskFromABCInherited,
+    }
 
 
 def test_expansion_from_abstract():
@@ -99,6 +111,7 @@ def test_expansion_from_abc_and_abstract():
     repo = CoSyLuigiRepo(ABCInheritedTask, AbstractTask)
     assert repo.luigi_repo == {
         ConcreteTaskFromABCInherited,
+        DeeperConcreteTaskFromABCTaskFromABCInherited,
         DeeperConcreteTaskFromABCInherited,
         ConcreteTaskFromAbstract,
         DeeperConcreteTaskFromAbstract,
