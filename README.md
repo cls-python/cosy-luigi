@@ -22,7 +22,14 @@ such as inheritance, resulting in a low barrier to entry.
 
 ## Examples
 
-
+``` bash
+hatch run getting-started:basic
+hatch run getting-started:variation
+hatch run getting-started:console
+hatch run getting-started:run
+hatch run lot-sizing:run
+hatch run ml-blood-sugar-level:run
+```
 
 
 ## Installation

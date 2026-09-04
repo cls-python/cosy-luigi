@@ -479,4 +479,3 @@ if __name__ == "__main__":
 
     ww = WagnerWhitin()
     output = ww.run(dict_in, demand)
-    print(output)
