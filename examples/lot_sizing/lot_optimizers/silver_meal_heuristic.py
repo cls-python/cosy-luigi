@@ -12,7 +12,6 @@ class SilverMeal:
         kv = dict_in["varCost"]
         pp = len(dem)
         # rh = dict_in["roll"]
-        # print(pp)
         orders = [0 for i in range(pp)]
         orders1 = [0 for i in range(pp)]
 
@@ -59,10 +58,7 @@ class SilverMeal:
 
         x = orders1.count(0)
         fix = (pp - x) * kf
-        # print(cost_i)
         cost_i + fix
-        #  print("Total Cost: " + str(total_c))
-        #        print(sum(orders1))
         return np.array(orders1)
 
 
@@ -156,4 +152,3 @@ if __name__ == "__main__":
 
     silver_m = SilverMeal()
     output = silver_m.run(dict_in, demand)
-    print(output)

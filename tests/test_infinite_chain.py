@@ -1,22 +1,17 @@
 """Test if chaining the same task or sequence of tasks infinitely to each other is possible, i.e. ensure that the
-caching done by Luigi is not restricting the set of results."""
+caching done by the engine is not restricting the set of results."""
 
-import itertools
 from abc import ABC
 
 import pytest
-from cosy.maestro import Maestro
-from luigi.mock import MockTarget
 
-from cosy_luigi import CoSyLuigiRepo, CoSyLuigiTask, CoSyLuigiTaskParameter
-
-counter = itertools.count()
+from maestro import Maestro, Repository, Task, TaskParameter
 
 
-class ChainLink(CoSyLuigiTask, ABC):
+class ChainLink(Task, ABC):
     """An abstract class representing a chain link in an infinite chain."""
 
-    chain_link: CoSyLuigiTaskParameter | None
+    chain_link: TaskParameter | None
 
 
 class StartingLink(ChainLink):
@@ -28,42 +23,33 @@ class StartingLink(ChainLink):
 class RepeatingLink(ChainLink):
     """A class that recurses the chain by requiring a further chain link."""
 
-    chain_link = CoSyLuigiTaskParameter(ChainLink)
-
-    def output(self):
-        """Assign each chain link a unique identifier. This is required because CoSy-Luigi considers tasks with
-        identical names, identical requirements, and identical outputs to be Singletons. This differs from Luigi,
-        which considers tasks with identical names and identical requirements Singletons.
-
-        Returns:
-            Mapping[str, MockTarget]_: The named unique target for each chain link.
-        """
-        return {"counter": MockTarget(str(next(counter)))}
+    chain_link = TaskParameter(ChainLink)
 
 
 @pytest.fixture
 def repo():
-    """Creates a CoSyLuigiRepo that contains the StartingLink and the RepeatingLink.
+    """Creates a Repository that contains the StartingLink and the RepeatingLink.
 
     Returns:
-        CoSyLuigiRepo: The created CoSyLuigiRepo.
+        Repository: The created Repository.
     """
-    return CoSyLuigiRepo(ChainLink)
+    return Repository(ChainLink)
 
 
 def test_infinite_chain(repo):
-    """Tests if the results of pipeline synthesis are the pipelines that incrementally contain one more repeating
-    link. If CoSy-Luigi does not correctly override the task_id generation from Luigi, or if alternatively the
-    instance cache of the global Luigi Registry is not disabled, this test will fail.
+    """Tests if the results of pipeline synthesis are the pipelines that incrementally contain one more repeating link.
+    Nothing sets the links apart by hand: the Maestro identifies a task by the whole walk beneath it, so links at
+    different depths are already different tasks. Were identity any shallower, they would collapse into one and this
+    test would fail.
 
     Args:
-        repo (CoSyLuigiRepo): The repository to use for synthesis.
+        repo (Repository): The repository to use for synthesis.
     """
     maestro = Maestro(
         repo.cls_repo,
         repo.taxonomy,
     )
-    results = list(maestro.query(RepeatingLink.target(), max_count=10))
+    results = list(maestro.query(RepeatingLink.target(), max_size=11))
 
     # Check shapes of the pipelines
     for i, result in enumerate(results):

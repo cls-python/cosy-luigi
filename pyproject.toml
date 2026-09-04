@@ -23,10 +23,7 @@ classifiers = [
   "Programming Language :: Python :: Implementation :: CPython",
   "Programming Language :: Python :: Implementation :: PyPy",
 ]
-dependencies = [
-    "combinatory-synthesizer==0.0.1.dev29",
-    "luigi==3.8.0"
-]
+dependencies = []
 
 
 [project.urls]
@@ -45,11 +42,11 @@ version_scheme = "guess-next-dev"
 
 
 [tool.hatch.build.hooks.vcs]
-version-file = "src/cosy_luigi/_version.py"
+version-file = "src/maestro/_version.py"
 
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/cosy_luigi"]
+packages = ["src/maestro"]
 
 
 [[tool.hatch.envs.hatch-test.matrix]]
@@ -57,17 +54,17 @@ python = ["3.13", "3.12", "3.11", "3.10"]
 
 
 [tool.coverage.run]
-source_pkgs = ["cosy_luigi", "tests"]
+source_pkgs = ["maestro", "tests"]
 branch = true
 parallel = true
 omit = [
-  "src/cosy_luigi/__about__.py",
-  "src/cosy_luigi/_version.py",
+  "src/maestro/__about__.py",
+  "src/maestro/_version.py",
 ]
 
 
 [tool.coverage.paths]
-cosy-luigi = ["src/cosy_luigi", "*/cosy-luigi/src/cosy_luigi"]
+cosy-luigi = ["src/maestro", "*/cosy-luigi/src/maestro"]
 tests = ["tests", "*/cosy-luigi/tests"]
 
 

@@ -1,10 +1,11 @@
 # Getting Started
 
 This section is still under construction. 
-At present, it contains two examples:
+At present, it contains three examples:
 
-- A very basic example, which primarily demonstrates how Luigi works
-- A simple example on how CoSy-Luigi models variance by inheritance. 
+- A very basic example, which primarily demonstrates how the framework works.
+- A simple example on how CoSy-Luigi models variance by inheritance.
+- An example that shows how running `build` and the caching looks.
 
 Some interesting quirks: 
 

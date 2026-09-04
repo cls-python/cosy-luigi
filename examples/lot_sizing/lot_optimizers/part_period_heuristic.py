@@ -46,12 +46,7 @@ class PartPeriod:
         orders1[i] = lot
         x = orders1.count(0)
         fix = (pp - x) * kf
-        #    print(cost_i)
-        #    print(fix)
         cost_i + fix + cost_v
-        #   print("total cost: " + str(total_c))
-        #    print(x)
-        #    print(sum(orders1))
         return np.array(orders1)
 
 
@@ -145,4 +140,3 @@ if __name__ == "__main__":
 
     pp = PartPeriod()
     output = pp.run(dict_in, demand)
-    print(output)

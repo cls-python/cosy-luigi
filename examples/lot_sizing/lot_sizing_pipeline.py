@@ -1,24 +1,20 @@
 import json
 import os
-import textwrap
 from abc import ABC, abstractmethod
-from pathlib import Path
 
-import luigi
 import pandas as pd
-from cosy.maestro import Maestro
 from lot_optimizers.groff_heuristic import GroffHeuristic
 from lot_optimizers.least_unit_cost_method import LeastUnitCostMethod
 from lot_optimizers.part_period_heuristic import PartPeriod
 from lot_optimizers.silver_meal_heuristic import SilverMeal
 from lot_optimizers.wagner_whitin import WagnerWhitin
 
-from cosy_luigi import CoSyLuigiRepo, CoSyLuigiTask, CoSyLuigiTaskParameter
+from maestro import LocalTarget, Maestro, Repository, Task, TaskParameter, run_pipelines
 
 
-class GetCosts(CoSyLuigiTask):
+class GetCosts(Task):
     def output(self):
-        return {"costs": luigi.LocalTarget("data/costs.json")}
+        return {"costs": LocalTarget("data/costs.json")}
 
     def run(self):
         d = {
@@ -30,22 +26,22 @@ class GetCosts(CoSyLuigiTask):
             json.dump(d, f, indent=4)
 
 
-class GetHistoricDemand(CoSyLuigiTask):
+class GetHistoricDemand(Task):
     def output(self):
-        return {"historic_demand": luigi.LocalTarget("data/historic_demand.csv")}
+        return {"historic_demand": LocalTarget("data/historic_demand.csv")}
 
     def run(self):
         with self.output()["historic_demand"].open("w") as f:
             f.write("1, 5, 7, 8, 9, 10, 14, 16, 19, 21, 19, 23, 24, 26, 26, 26, 28, 26, 28, 30")
 
 
-class PredictDemand(CoSyLuigiTask, ABC):
-    get_historic_demand = CoSyLuigiTaskParameter(GetHistoricDemand)
+class PredictDemand(Task, ABC):
+    get_historic_demand = TaskParameter(GetHistoricDemand)
     prediction_horizon = 8
     output_filename: str = ""
 
     def output(self):
-        return {"predicted_demand": luigi.LocalTarget(self.output_filename)}
+        return {"predicted_demand": LocalTarget(self.output_filename)}
 
 
 class PredictDemandByAverage(PredictDemand):
@@ -76,10 +72,9 @@ class PredictDemandByLinearRegression(PredictDemand):
             df_predicted.to_json(self.output()["predicted_demand"].path)
 
 
-class OptimizeLots(CoSyLuigiTask, ABC):
-    predict_demand = CoSyLuigiTaskParameter(PredictDemand)
-    get_costs = CoSyLuigiTaskParameter(GetCosts)
-    output_filename: str = ""
+class OptimizeLots(Task, ABC):
+    predict_demand = TaskParameter(PredictDemand)
+    get_costs = TaskParameter(GetCosts)
 
     def _get_cost(self):
         with open(self.input()["get_costs"]["costs"].path, "rb") as f:
@@ -90,7 +85,7 @@ class OptimizeLots(CoSyLuigiTask, ABC):
         return list(demand_df["predicted_demand"])
 
     def output(self):
-        return {"optimized_lots": luigi.LocalTarget("data/" + self._get_variant_label() + "-" + self.output_filename)}
+        return {"optimized_lots": LocalTarget(f"data/{self.variant_label}.txt")}
 
     def run(self):
         cost = self._get_cost()
@@ -105,55 +100,39 @@ class OptimizeLots(CoSyLuigiTask, ABC):
     def run_optimizer(self, cost, demand):
         return NotImplementedError()
 
-    def _get_variant_label(self):
-        if isinstance(self.input()["predict_demand"]["predicted_demand"], luigi.LocalTarget):
-            label = self.input()["predict_demand"]["predicted_demand"].path
-            return Path(label).stem
-        return None
-
 
 class OptimizeLotsByGroff(OptimizeLots):
-    output_filename = "optimize_lots_by_groff.txt"
-
     def run_optimizer(self, cost, demand):
         optimizer = GroffHeuristic()
         return optimizer.run(cost, demand)
 
 
 class OptimizeLotsByWagnerWhitin(OptimizeLots):
-    output_filename = "optimize_lots_by_wagner_within.txt"
-
     def run_optimizer(self, cost, demand):
         optimizer = WagnerWhitin()
         return optimizer.run(cost, demand)
 
 
 class OptimizeLotsBySilverMeal(OptimizeLots):
-    output_filename = "optimize_lots_by_silver_meal.txt"
-
     def run_optimizer(self, cost, demand):
         optimizer = SilverMeal()
         return optimizer.run(cost, demand)
 
 
 class OptimizeLotsByLeastUnitCost(OptimizeLots):
-    output_filename = "optimize_lots_by_least_unit_cost.txt"
-
     def run_optimizer(self, cost, demand):
         optimizer = LeastUnitCostMethod()
         return optimizer.run(cost, demand)
 
 
 class OptimizeLotsByPartPeriod(OptimizeLots):
-    output_filename = "optimize_lots_by_part_period.txt"
-
     def run_optimizer(self, cost, demand):
         optimizer = PartPeriod()
         return optimizer.run(cost, demand)
 
 
 if __name__ == "__main__":
-    repo = CoSyLuigiRepo(
+    repo = Repository(
         GetCosts,
         GetHistoricDemand,
         PredictDemand,
@@ -162,13 +141,4 @@ if __name__ == "__main__":
     print(PredictDemand.get_all_variants())
     maestro = Maestro(repo.cls_repo, repo.taxonomy)
     results = maestro.query(OptimizeLots.target())
-    luigi.build(results, local_scheduler=True, detailed_summary=True)
-    print(
-        textwrap.dedent(
-            f"""
-            ===============================================
-                There are a total of {len(list(results))} results
-            ==============================================="""
-        )
-    )
-    results.visualize()
+    run_pipelines(results).report()

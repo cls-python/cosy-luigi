@@ -1,19 +1,19 @@
 """Tests if flatten correctly expands abstract classes to their concrete implementing classes for repository
 construction. Note that this tests for inheriting from ABC and having abstract methods. This is due to checking for
-abstractness in python checks for the presence of abstract methods, but within the modeling context of CoSy-Luigi,
-classes can just be identifiers that groud their subclasses, so marking a class abstract by just inheriting from ABC
-is a valid use-case."""
+abstractness in python checks for the presence of abstract methods, but within the modeling context of the Maestro,
+classes can just be identifiers that groud their subclasses, so marking a class abstract by just inheriting from ABC is
+a valid use-case."""
 
 from abc import ABC, abstractmethod
 
-from cosy_luigi import CoSyLuigiRepo, CoSyLuigiTask
+from maestro import Repository, Task
 
 
-class ABCInheritedTaskWithNoInheritors(CoSyLuigiTask, ABC):
+class ABCInheritedTaskWithNoInheritors(Task, ABC):
     """An abstract class that no other class inherits from. This class is abstract because it inherits from ABC."""
 
 
-class ABCInheritedTask(CoSyLuigiTask, ABC):
+class ABCInheritedTask(Task, ABC):
     """An abstract class. This class is abstract because it inherits from ABC."""
 
 
@@ -34,7 +34,7 @@ class DeeperConcreteTaskFromABCInherited(ConcreteTaskFromABCInherited):
 
 
 # noinspection PyAbstractClass
-class AbstractTask(CoSyLuigiTask):
+class AbstractTask(Task):
     """An abstract class. This class is abstract because it has an abstract method."""
 
     @abstractmethod
@@ -48,7 +48,7 @@ class AbstractTask(CoSyLuigiTask):
 
 
 # noinspection PyAbstractClass
-class AbstractTaskWithNoInheritors(CoSyLuigiTask):
+class AbstractTaskWithNoInheritors(Task):
     """An abstract class that no other class inherits from. This class is abstract because it has an abstract method."""
 
     @abstractmethod
@@ -86,10 +86,10 @@ class DeeperConcreteTaskFromAbstract(ConcreteTaskFromAbstract):
 
 
 def test_expansion_from_abc():
-    """Tests if adding a class that is abstract because it inherits from ABC expands to all of its subclasses when
-    added to a CoSyLuigiRepo."""
-    repo = CoSyLuigiRepo(ABCInheritedTask)
-    assert repo.luigi_repo == {
+    """Tests if adding a class that is abstract because it inherits from ABC expands to all of its subclasses when added
+    to a Repository."""
+    repo = Repository(ABCInheritedTask)
+    assert repo.task_repo == {
         ConcreteTaskFromABCInherited,
         DeeperConcreteTaskFromABCInherited,
         DeeperConcreteTaskFromABCTaskFromABCInherited,
@@ -98,18 +98,18 @@ def test_expansion_from_abc():
 
 def test_expansion_from_abstract():
     """Tests if adding a class that is abstract because it has abstract methods expands to all of its subclasses when
-    added to a CoSyLuigiRepo."""
-    repo = CoSyLuigiRepo(AbstractTask)
+    added to a Repository."""
+    repo = Repository(AbstractTask)
     assert ConcreteTaskFromAbstract().get_class_name() == "ConcreteTaskFromAbstract"
     assert DeeperConcreteTaskFromAbstract().get_class_name() == "DeeperConcreteTaskFromAbstract"
-    assert repo.luigi_repo == {ConcreteTaskFromAbstract, DeeperConcreteTaskFromAbstract}
+    assert repo.task_repo == {ConcreteTaskFromAbstract, DeeperConcreteTaskFromAbstract}
 
 
 def test_expansion_from_abc_and_abstract():
     """Tests if adding classes that are abstract because of different reasons expand to all of their subclasses when
-    added to CoSyLuigiRepo."""
-    repo = CoSyLuigiRepo(ABCInheritedTask, AbstractTask)
-    assert repo.luigi_repo == {
+    added to Repository."""
+    repo = Repository(ABCInheritedTask, AbstractTask)
+    assert repo.task_repo == {
         ConcreteTaskFromABCInherited,
         DeeperConcreteTaskFromABCTaskFromABCInherited,
         DeeperConcreteTaskFromABCInherited,
@@ -120,25 +120,25 @@ def test_expansion_from_abc_and_abstract():
 
 def test_implementation_of_abstract_does_not_expand():
     """Test if a tasks that concretizes an abstract class does not expand."""
-    repo = CoSyLuigiRepo(ConcreteTaskFromAbstract)
-    assert repo.luigi_repo == {ConcreteTaskFromAbstract}
+    repo = Repository(ConcreteTaskFromAbstract)
+    assert repo.task_repo == {ConcreteTaskFromAbstract}
 
 
 def test_implementation_of_abc_does_not_expand():
     """Test if a tasks that it is concrete because it does not directly inherit from ABC does not expand."""
-    repo = CoSyLuigiRepo(ConcreteTaskFromABCInherited)
-    assert repo.luigi_repo == {ConcreteTaskFromABCInherited}
+    repo = Repository(ConcreteTaskFromABCInherited)
+    assert repo.task_repo == {ConcreteTaskFromABCInherited}
 
 
 def test_expansion_to_nothing_from_abc_with_no_inheritors():
-    """Tests if an abstract task that is abstract because it inherits from ABC but has no classes that inherit from
-    it expands to an empty set."""
-    repo = CoSyLuigiRepo(ABCInheritedTaskWithNoInheritors)
-    assert repo.luigi_repo == set()
+    """Tests if an abstract task that is abstract because it inherits from ABC but has no classes that inherit from it
+    expands to an empty set."""
+    repo = Repository(ABCInheritedTaskWithNoInheritors)
+    assert repo.task_repo == set()
 
 
 def test_expansion_to_nothing_from_abstract_with_no_inheritors():
-    """Tests if an abstract task that is abstract because it has abstract methods but has no classes that inherit
-    from it expands to an empty set."""
-    repo = CoSyLuigiRepo(AbstractTaskWithNoInheritors)
-    assert repo.luigi_repo == set()
+    """Tests if an abstract task that is abstract because it has abstract methods but has no classes that inherit from
+    it expands to an empty set."""
+    repo = Repository(AbstractTaskWithNoInheritors)
+    assert repo.task_repo == set()

@@ -1,13 +1,9 @@
 import os
-import textwrap
 from abc import ABC
-from pathlib import Path
 
-import luigi
 import numpy as np
 import pandas as pd
 import skops.io as sio
-from cosy.maestro import Maestro
 from sklearn.base import RegressorMixin
 from sklearn.datasets import load_diabetes
 from sklearn.linear_model import LassoLars, LinearRegression
@@ -15,14 +11,14 @@ from sklearn.metrics import root_mean_squared_error
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler, RobustScaler
 
-from cosy_luigi import CoSyLuigiRepo, CoSyLuigiTask, CoSyLuigiTaskParameter
+from maestro import LocalTarget, Maestro, Repository, Task, TaskParameter, run_pipelines
 
 ninetydegaisle = True
 
 
-class LoadDiabetesData(CoSyLuigiTask):
+class LoadDiabetesData(Task):
     def output(self):
-        return {"diabetes_data": luigi.LocalTarget("data/diabetes.json")}
+        return {"diabetes_data": LocalTarget("data/diabetes.json")}
 
     def run(self):
         diabetes = load_diabetes()
@@ -33,15 +29,15 @@ class LoadDiabetesData(CoSyLuigiTask):
         df.to_json(self.output()["diabetes_data"].path)
 
 
-class TrainTestSplit(CoSyLuigiTask):
-    diabetes = CoSyLuigiTaskParameter(LoadDiabetesData)
+class TrainTestSplit(Task):
+    diabetes = TaskParameter(LoadDiabetesData)
 
     def output(self):
         return {
-            "x_train": luigi.LocalTarget("data/x_train.json"),
-            "x_test": luigi.LocalTarget("data/x_test.json"),
-            "y_train": luigi.LocalTarget("data/y_train.json"),
-            "y_test": luigi.LocalTarget("data/y_test.json"),
+            "x_train": LocalTarget("data/x_train.json"),
+            "x_test": LocalTarget("data/x_test.json"),
+            "y_train": LocalTarget("data/y_train.json"),
+            "y_test": LocalTarget("data/y_test.json"),
         }
 
     def run(self):
@@ -56,16 +52,16 @@ class TrainTestSplit(CoSyLuigiTask):
         y_test.to_json(self.output()["y_test"].path)
 
 
-class FitTransformScaler(CoSyLuigiTask, ABC):
-    splitted_data = CoSyLuigiTaskParameter(TrainTestSplit)
+class FitTransformScaler(Task, ABC):
+    splitted_data = TaskParameter(TrainTestSplit)
     scaler_name: str
     scaler: MinMaxScaler | RobustScaler
 
     def output(self):
         return {
-            "scaled_x_train": luigi.LocalTarget(f"data/{self.scaler_name}_scaled_x_train.json"),
-            "scaled_x_test": luigi.LocalTarget(f"data/{self.scaler_name}_scaled_x_test.json"),
-            "scaler": luigi.LocalTarget(f"data/{self.scaler_name}_scaler.skops"),
+            "scaled_x_train": LocalTarget(f"data/{self.scaler_name}_scaled_x_train.json"),
+            "scaled_x_test": LocalTarget(f"data/{self.scaler_name}_scaled_x_test.json"),
+            "scaler": LocalTarget(f"data/{self.scaler_name}_scaler.skops"),
         }
 
     def scale(self, data_identifier: str):
@@ -92,17 +88,13 @@ class FitTransformRobustScaler(FitTransformScaler):
     scaler = RobustScaler()
 
 
-class TrainRegressionModel(CoSyLuigiTask, ABC):
-    scaled_feats = CoSyLuigiTaskParameter(FitTransformScaler)
-    splitted_data = CoSyLuigiTaskParameter(TrainTestSplit)
-    model_name: str
+class TrainRegressionModel(Task, ABC):
+    scaled_feats = TaskParameter(FitTransformScaler)
+    splitted_data = TaskParameter(TrainTestSplit)
     model: RegressorMixin
 
-    def _get_variant_label(self):
-        return f"data/{self.model_name}-{Path(self.input()['scaled_feats']['scaled_x_train'].path).stem}"
-
     def output(self):
-        return {"model": luigi.LocalTarget(self._get_variant_label() + ".skops")}
+        return {"model": LocalTarget(f"data/{self.variant_label}.skops")}
 
     def run(self):
         x_train = pd.read_json(self.input()["scaled_feats"]["scaled_x_train"].path)
@@ -114,25 +106,20 @@ class TrainRegressionModel(CoSyLuigiTask, ABC):
 
 
 class TrainLinearRegressionModel(TrainRegressionModel):
-    model_name = "linear_reg"
     model = LinearRegression()
 
 
 class TrainLassoLarsModel(TrainRegressionModel):
-    model_name = "lasso_lars"
     model = LassoLars()
 
 
-class EvaluateRegressionModel(CoSyLuigiTask):
-    regressor = CoSyLuigiTaskParameter(TrainRegressionModel)
-    scaled_feats = CoSyLuigiTaskParameter(FitTransformScaler, unique_across_prior_tasks=True)
-    splitted_data = CoSyLuigiTaskParameter(TrainTestSplit)
-
-    def _get_variant_label(self):
-        return Path(self.input()["regressor"]["model"].path).stem
+class EvaluateRegressionModel(Task):
+    regressor = TaskParameter(TrainRegressionModel)
+    scaled_feats = TaskParameter(FitTransformScaler, unique_across_prior_tasks=True)
+    splitted_data = TaskParameter(TrainTestSplit)
 
     def output(self):
-        return {"evaluation": luigi.LocalTarget("data/y_pred" + "-" + self._get_variant_label() + ".json")}
+        return {"evaluation": LocalTarget(f"data/y_pred-{self.variant_label}.json")}
 
     def run(self):
         unknown_types = sio.get_untrusted_types(file=self.input()["regressor"]["model"].path)
@@ -144,14 +131,14 @@ class EvaluateRegressionModel(CoSyLuigiTask):
         y_pred["y_pred"] = reg.predict(scaled_x_test).ravel()
         rmse = round(root_mean_squared_error(y_test, y_pred), 3)
 
-        print(self._get_variant_label())
+        print(self.variant_label)
         print(f"RMSE: {rmse}")
 
         y_pred.to_json(self.output()["evaluation"].path)
 
 
 def main():
-    repo = CoSyLuigiRepo(
+    repo = Repository(
         TrainTestSplit,
         LoadDiabetesData,
         FitTransformRobustScaler,
@@ -162,16 +149,7 @@ def main():
     )
     maestro = Maestro(repo.cls_repo, repo.taxonomy)
     results = maestro.query(EvaluateRegressionModel.target())
-    luigi.build(results, local_scheduler=True, detailed_summary=True)
-    print(
-        textwrap.dedent(
-            f"""
-                ===============================================
-                    There are a total of {len(list(results))} results
-                ==============================================="""
-        )
-    )
-    results.visualize()
+    run_pipelines(results).report()
 
 
 if __name__ == "__main__":

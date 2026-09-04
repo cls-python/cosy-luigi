@@ -1,64 +1,64 @@
 """Tests if flatten correctly flattens arbitrarily nested sequences."""
 
-from cosy_luigi import CoSyLuigiRepo, CoSyLuigiTask
-from cosy_luigi.utils import flatten
+from maestro import Repository, Task
+from maestro.utils import flatten
 
 
-class TaskA(CoSyLuigiTask):
+class TaskA(Task):
     """Placeholder Task A."""
 
 
-class TaskB(CoSyLuigiTask):
+class TaskB(Task):
     """Placeholder Task B."""
 
 
-class TaskC(CoSyLuigiTask):
+class TaskC(Task):
     """Placeholder Task C."""
 
 
-class TaskD(CoSyLuigiTask):
+class TaskD(Task):
     """Placeholder Task D."""
 
 
-class TaskE(CoSyLuigiTask):
+class TaskE(Task):
     """Placeholder Task E."""
 
 
-class TaskF(CoSyLuigiTask):
+class TaskF(Task):
     """Placeholder Task F."""
 
 
-class TaskG(CoSyLuigiTask):
+class TaskG(Task):
     """Placeholder Task G."""
 
 
-class TaskH(CoSyLuigiTask):
+class TaskH(Task):
     """Placeholder Task H."""
 
 
-class TaskI(CoSyLuigiTask):
+class TaskI(Task):
     """Placeholder Task I."""
 
 
-class TaskJ(CoSyLuigiTask):
-    """ "Placeholder Task J."""
+class TaskJ(Task):
+    """Placeholder Task J."""
 
 
-class TaskK(CoSyLuigiTask):
+class TaskK(Task):
     """Placeholder Task K."""
 
 
 def test_heterogeneous_repo_input():
-    """Test if instantiating a CoSyLuigiRepo for a 2-times nested mixed Sequence of Sequences leads to the luigi_repo
-    containing a set of the types contained in the Sequence of  CoSyLuigiTasks. The Sequence is passed through the
-    varargs of the CoSyLuigiRepo constructor."""
-    repo = CoSyLuigiRepo(TaskA, [TaskB, TaskC], (TaskD, TaskE), [TaskF, (TaskG, TaskH)], (TaskI, [TaskJ, TaskK]))
-    assert repo.luigi_repo == {TaskA, TaskB, TaskC, TaskD, TaskE, TaskF, TaskG, TaskH, TaskI, TaskJ, TaskK}
+    """Test if instantiating a Repository for a 2-times nested mixed Sequence of Sequences leads to the task_repo
+    containing a set of the types contained in the Sequence of  Tasks. The Sequence is passed through the varargs of the
+    Repository constructor."""
+    repo = Repository(TaskA, [TaskB, TaskC], (TaskD, TaskE), [TaskF, (TaskG, TaskH)], (TaskI, [TaskJ, TaskK]))
+    assert repo.task_repo == {TaskA, TaskB, TaskC, TaskD, TaskE, TaskF, TaskG, TaskH, TaskI, TaskJ, TaskK}
 
 
 def test_heterogeneous_args_input():
     """Test if calling flatten on a 2-times nested mixed Sequence of Sequences returns a set containing the types
-    contained in the Sequence of CoSyLuigiTasks. The Sequence is passed through the varargs of flatten."""
+    contained in the Sequence of Tasks. The Sequence is passed through the varargs of flatten."""
     flattened_collection = set(
         flatten(TaskA, [TaskB, TaskC], (TaskD, TaskE), [TaskF, (TaskG, TaskH)], (TaskI, [TaskJ, TaskK]))
     )
@@ -66,8 +66,8 @@ def test_heterogeneous_args_input():
 
 
 def test_heterogeneous_list_input():
-    """Test if calling flatten on a 2-times nested mixed list of Sequences returns a set containing the types
-    contained in the list of CoSyLuigiTasks. The list is passed as a single argument to flatten."""
+    """Test if calling flatten on a 2-times nested mixed list of Sequences returns a set containing the types contained
+    in the list of Tasks. The list is passed as a single argument to flatten."""
     flattened_collection = list(
         flatten([TaskA, [TaskB, TaskC], (TaskD, TaskE), [TaskF, (TaskG, TaskH)], (TaskI, [TaskJ, TaskK])])
     )
@@ -75,8 +75,8 @@ def test_heterogeneous_list_input():
 
 
 def test_heterogeneous_tuple_input():
-    """Test if calling flatten on a 2-times nested mixed tuple of Sequences returns a set containing the types
-    contained in the tuple of CoSyLuigiTasks. The tuple is passed as a single argument to flatten."""
+    """Test if calling flatten on a 2-times nested mixed tuple of Sequences returns a set containing the types contained
+    in the tuple of Tasks. The tuple is passed as a single argument to flatten."""
     flattened_collection = tuple(
         flatten((TaskA, [TaskB, TaskC], (TaskD, TaskE), [TaskF, (TaskG, TaskH)], (TaskI, [TaskJ, TaskK])))
     )

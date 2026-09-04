@@ -43,10 +43,7 @@ class GroffHeuristic:
             p += i - p
         x = orders.count(0)
         fix = (pp - x) * kf
-        print(fix)
-        total_c = cost_v + fix
-        print("total cost: " + str(total_c))
-        print(sum(orders))
+        cost_v + fix
         return np.array(orders)
 
 
@@ -78,4 +75,3 @@ if __name__ == "__main__":
 
     groff = GroffHeuristic()
     output = groff.run(dict_in, demand)
-    print(output)

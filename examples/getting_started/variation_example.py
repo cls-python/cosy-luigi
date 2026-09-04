@@ -1,28 +1,24 @@
-import textwrap
 from abc import ABC
 from string import Template
 
-import luigi
-from cosy.maestro import Maestro
-
-from cosy_luigi import CoSyLuigiRepo, CoSyLuigiTask, CoSyLuigiTaskParameter
+from maestro import LocalTarget, Maestro, Repository, Task, TaskParameter, run_pipelines
 
 
-class WriteTemplateTask(CoSyLuigiTask):
+class WriteTemplateTask(Task):
     def output(self):
-        return {"template": luigi.LocalTarget("hello_world_template.txt")}
+        return {"template": LocalTarget("hello_world_template.txt")}
 
     def run(self):
         with self.output()["template"].open("w") as result:
             result.write("Hello World $name")
 
 
-class SubstituteNameTask(CoSyLuigiTask, ABC):
-    template_task = CoSyLuigiTaskParameter(WriteTemplateTask)
+class SubstituteNameTask(Task, ABC):
+    template_task = TaskParameter(WriteTemplateTask)
     name: str = None
 
     def output(self):
-        return {"filled_template": luigi.LocalTarget(self.__class__.__name__ + "_filled_template.txt")}
+        return {"filled_template": LocalTarget(self.__class__.__name__ + "_filled_template.txt")}
 
     def run(self):
         with self.input()["template_task"]["template"].open() as input_template:
@@ -41,19 +37,10 @@ class SubstituteNameByJaneDoeTask(SubstituteNameTask):
 
 
 def main():
-    repo = CoSyLuigiRepo(WriteTemplateTask, SubstituteNameTask)
+    repo = Repository(WriteTemplateTask, SubstituteNameTask)
     maestro = Maestro(repo.cls_repo, repo.taxonomy)
     results = maestro.query(SubstituteNameTask.target())
-    luigi.build(results, local_scheduler=True, detailed_summary=True)
-    print(
-        textwrap.dedent(
-            f"""
-                ===============================================
-                    There are a total of {len(list(results))} results
-                ==============================================="""
-        )
-    )
-    results.visualize()
+    run_pipelines(results).report()
 
 
 if __name__ == "__main__":

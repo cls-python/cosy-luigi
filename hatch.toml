@@ -38,7 +38,7 @@ extra-dependencies = [
 
 
 [envs.types.scripts]
-check = "mypy --install-types --non-interactive {args:src/cosy_luigi tests}"
+check = "mypy --install-types --non-interactive {args:src/maestro tests}"
 
 
 [envs.hatch-test]

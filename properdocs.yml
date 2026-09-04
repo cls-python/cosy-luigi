@@ -58,7 +58,7 @@ nav:
     - Authors: about/authors.md
 
 watch:
-- src/cosy_luigi
+- src/maestro
 - examples
 
 plugins:

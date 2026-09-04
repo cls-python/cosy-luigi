@@ -1,25 +1,20 @@
-import textwrap
-
-import luigi
-from cosy.maestro import Maestro
-
-from cosy_luigi import CoSyLuigiRepo, CoSyLuigiTask, CoSyLuigiTaskParameter
+from maestro import LocalTarget, Maestro, Repository, Task, TaskParameter, run_pipelines
 
 
-class TaskA(CoSyLuigiTask):
+class TaskA(Task):
     def output(self):
-        return {"a_artifact": luigi.LocalTarget("output/task_a_output.txt")}
+        return {"a_artifact": LocalTarget("output/task_a_output.txt")}
 
     def run(self):
         with self.output()["a_artifact"].open("w") as f:
             f.write("Task A completed")
 
 
-class TaskB(CoSyLuigiTask):
-    task_a = CoSyLuigiTaskParameter(TaskA)
+class TaskB(Task):
+    task_a = TaskParameter(TaskA)
 
     def output(self):
-        return {"b_artifact": luigi.LocalTarget("output/task_b_output.txt")}
+        return {"b_artifact": LocalTarget("output/task_b_output.txt")}
 
     def run(self):
         with (
@@ -31,19 +26,10 @@ class TaskB(CoSyLuigiTask):
 
 
 if __name__ == "__main__":
-    repo = CoSyLuigiRepo(
+    repo = Repository(
         TaskA,
         TaskB,
     )
     maestro = Maestro(repo.cls_repo, repo.taxonomy)
     results = maestro.query(TaskB.target())
-    luigi.build(results, local_scheduler=True, detailed_summary=True)
-    print(
-        textwrap.dedent(
-            f"""
-                ===============================================
-                    There are a total of {len(list(results))} results
-                ==============================================="""
-        )
-    )
-    results.visualize()
+    run_pipelines(results).report()

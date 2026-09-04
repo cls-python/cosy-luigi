@@ -494,10 +494,11 @@ $RECYCLE.BIN/
 report.xml
 
 # Auto-generated during builds
-/src/cosy_luigi/_version.py
+/src/maestro/_version.py
 
 # Examples
 /examples/**/*.txt
 /examples/**/*.json
 /examples/**/*.csv
 /examples/**/*.skops
+output/
