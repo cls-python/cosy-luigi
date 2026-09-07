@@ -126,14 +126,8 @@ class EvaluateRegressionModel(Task):
         reg = sio.load(self.input()["regressor"]["model"].path, trusted=unknown_types)
 
         scaled_x_test = pd.read_json(self.input()["scaled_feats"]["scaled_x_test"].path)
-        y_test = pd.read_json(self.input()["splitted_data"]["y_test"].path)
         y_pred = pd.DataFrame()
         y_pred["y_pred"] = reg.predict(scaled_x_test).ravel()
-        rmse = round(root_mean_squared_error(y_test, y_pred), 3)
-
-        print(self.variant_label)
-        print(f"RMSE: {rmse}")
-
         y_pred.to_json(self.output()["evaluation"].path)
 
 
