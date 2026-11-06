@@ -32,10 +32,12 @@ from importlib.resources import files
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-from cosy_luigi.visualization.model import analyze, descendants, node_kind, repo_to_info
+from cosy_luigi.visualization.model import analyze, descendants, node_kind, repo_to_info, require_repo
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
+
+    from cosy_luigi import CoSyLuigiRepo
 
 STYLE: dict[str, Any] = {
     "colors": {
@@ -141,6 +143,14 @@ def render_html(
     return path
 
 
+def _view(
+    info: Mapping[str, Any], height: float | str, style: Mapping[str, Any], title: str, *, inline_elk: bool
+) -> tuple[str, str]:
+    """Page and CSS height of a :class:`PipelineView`."""
+    css_height = f"{height}px" if isinstance(height, (int, float)) else height
+    return to_html(info, style, title, inline_elk=inline_elk), css_height
+
+
 class PipelineView:
     """Interactive view for Jupyter (JupyterLab, Notebook, VS Code).
 
@@ -148,22 +158,37 @@ class PipelineView:
     also run in untrusted notebooks and several views in one notebook do not interfere.
 
     Args:
-        source: a ``CoSyLuigiRepo`` or a ``{"taxonomy": ..., "requires": ...}`` dict
+        repo: the repository whose template is shown; for a ``{"taxonomy": ..., "requires": ...}`` dict
+            use :meth:`from_info`
         height: height in the notebook (pixels or a CSS length)
     """
 
     def __init__(
         self,
-        source: Any,
+        repo: CoSyLuigiRepo,
         height: float | str = 500,
         style: Mapping[str, Any] = STYLE,
         title: str = "Pipeline template",
         *,
         inline_elk: bool = False,
     ) -> None:
-        info = repo_to_info(source) if hasattr(source, "taxonomy") else source
-        self.html = to_html(info, style, title, inline_elk=inline_elk)
-        self.height = f"{height}px" if isinstance(height, (int, float)) else height
+        info = repo_to_info(require_repo(repo, "PipelineView.from_info(info)"))
+        self.html, self.height = _view(info, height, style, title, inline_elk=inline_elk)
+
+    @classmethod
+    def from_info(
+        cls,
+        info: Mapping[str, Any],
+        height: float | str = 500,
+        style: Mapping[str, Any] = STYLE,
+        title: str = "Pipeline template",
+        *,
+        inline_elk: bool = False,
+    ) -> PipelineView:
+        """View for a ``{"taxonomy": ..., "requires": ...}`` dict (see ``repo_to_info``) instead of a repository."""
+        view = cls.__new__(cls)
+        view.html, view.height = _view(info, height, style, title, inline_elk=inline_elk)
+        return view
 
     def _repr_html_(self) -> str:
         return (

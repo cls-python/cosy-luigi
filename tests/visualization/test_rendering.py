@@ -3,12 +3,15 @@
 import re
 import warnings
 
+import pytest
+
 from cosy_luigi.visualization import PipelineView, render_html, to_html, visualize_template
 from cosy_luigi.visualization.graphviz import build_dot
 from cosy_luigi.visualization.interactive import ELK_URL, _script, build_view_model
 from cosy_luigi.visualization.model import analyze
 
 from .example_infos import LOT_SIZING, TITLES
+from .example_tasks import make_repo
 
 
 def test_dot_puts_heads_in_one_row_in_data_flow_order():
@@ -57,16 +60,27 @@ def test_render_html_writes_the_page(tmp_path):
 
 
 def test_pipeline_view_embeds_the_page_as_iframe():
-    view = PipelineView(TITLES, height=300)
+    view = PipelineView.from_info(TITLES, height=300)
     snippet = view._repr_html_()
     assert snippet.startswith('<iframe srcdoc="')
     assert "height: 300px" in snippet
     assert "<script" not in snippet  # the page is escaped inside the attribute
 
 
+def test_pipeline_view_takes_a_repository():
+    assert '"MsConsumer"' in PipelineView(make_repo()).html
+
+
 def test_visualize_template_writes_requested_formats(tmp_path):
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")  # Graphviz may be missing; the .dot source is written anyway
-        written = visualize_template(TITLES, tmp_path / "titles", formats=("html", "dot"))
+        written = visualize_template(make_repo(), tmp_path / "repo", formats=("html", "dot"))
     names = {p.name for p in written}
-    assert {"titles.html", "titles.dot"} <= names
+    assert {"repo.html", "repo.dot"} <= names
+
+
+def test_convenience_functions_only_take_a_repository(tmp_path):
+    with pytest.raises(TypeError, match=r"PipelineView\.from_info"):
+        PipelineView(TITLES)
+    with pytest.raises(TypeError, match="render_html"):
+        visualize_template(TITLES, tmp_path / "titles")

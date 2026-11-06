@@ -1,55 +1,11 @@
 """Tests for the renderer-independent template model: stages, inheritance trees and data flow."""
 
-from abc import ABC
+import pytest
 
-from cosy_luigi import CoSyLuigiRepo, CoSyLuigiTask, CoSyLuigiTaskParameter
-from cosy_luigi.visualization.model import analyze, descendants, node_kind, repo_to_info, toposort
+from cosy_luigi.visualization.model import analyze, descendants, node_kind, repo_to_info, require_repo, toposort
 
 from .example_infos import LOT_SIZING, TITLES
-
-
-class Source(CoSyLuigiTask):
-    """A concrete stage head without parameters."""
-
-
-class TitleSource(CoSyLuigiTask, ABC):
-    """An abstract stage head with two concrete variants."""
-
-
-class MsTitleSource(TitleSource):
-    """A concrete variant of TitleSource."""
-
-
-class MrTitleSource(TitleSource):
-    """A concrete variant of TitleSource."""
-
-
-class Consumer(CoSyLuigiTask, ABC):
-    """An abstract stage head declaring a parameter."""
-
-    source = CoSyLuigiTaskParameter(Source)
-
-
-class SimpleConsumer(Consumer):
-    """A concrete class without parameters of its own."""
-
-
-class TitledConsumer(Consumer, ABC):
-    """An abstract intermediate class declaring a parameter on an abstract stage head."""
-
-    title_source = CoSyLuigiTaskParameter(TitleSource)
-
-
-class MsConsumer(TitledConsumer):
-    """Overrides the parameter of its parent with a concrete variant."""
-
-    title_source = CoSyLuigiTaskParameter(MsTitleSource)
-
-
-class MrConsumer(TitledConsumer):
-    """Overrides the parameter of its parent with a concrete variant."""
-
-    title_source = CoSyLuigiTaskParameter(MrTitleSource)
+from .example_tasks import make_repo
 
 
 def test_stage_heads_are_ordered_by_data_flow():
@@ -106,7 +62,7 @@ def test_toposort_keeps_nodes_on_cycles():
 
 
 def test_repo_to_info_keys_requires_by_declaring_class():
-    info = repo_to_info(CoSyLuigiRepo(Source, TitleSource, Consumer))
+    info = repo_to_info(make_repo())
     requires = info["requires"]
     assert requires["Consumer"] == ["Source"]
     assert requires["TitledConsumer"] == ["TitleSource"]
@@ -119,7 +75,14 @@ def test_repo_to_info_keys_requires_by_declaring_class():
 
 
 def test_repo_to_info_feeds_analyze():
-    model = analyze(repo_to_info(CoSyLuigiRepo(Source, TitleSource, Consumer)))
+    model = analyze(repo_to_info(make_repo()))
     assert model["heads"] == ["Source", "TitleSource", "Consumer"]
     assert ("MsTitleSource", "MsConsumer") in model["node_flow"]
     assert ("TitleSource", "TitledConsumer") in model["node_flow"]
+
+
+def test_require_repo_rejects_other_input_with_a_hint():
+    repo = make_repo()
+    assert require_repo(repo, "f(info)") is repo
+    with pytest.raises(TypeError, match=r"expected a CoSyLuigiRepo, got dict; .* use f\(info\)"):
+        require_repo(TITLES, "f(info)")

@@ -131,12 +131,34 @@ def node_kind(n: str, model: Mapping[str, Any]) -> str:
     return "concrete"
 
 
+def require_repo(source: object, alternative: str) -> CoSyLuigiRepo:
+    """Return ``source`` if it is a ``CoSyLuigiRepo``, otherwise raise a ``TypeError`` naming the dict-based
+    ``alternative``. Keeps the convenience functions strict instead of guessing the type of their input."""
+    from cosy_luigi import CoSyLuigiRepo  # noqa: PLC0415  (avoid import cycle)
+
+    if not isinstance(source, CoSyLuigiRepo):
+        msg = (
+            f"expected a CoSyLuigiRepo, got {type(source).__name__}; "
+            f"for a {{'taxonomy': ..., 'requires': ...}} dict use {alternative}"
+        )
+        raise TypeError(msg)
+    return source
+
+
 def repo_to_info(repo: CoSyLuigiRepo) -> dict[str, Any]:
     """Build the ``{"taxonomy": ..., "requires": ...}`` dict for :func:`analyze` from a repository.
 
     ``requires`` is keyed by the class whose body declares a ``CoSyLuigiTaskParameter``, not by every
     concrete task that inherits it. Overridden declarations are kept, so every place in the source code
-    shows up in the visualization.
+    shows up in the visualization. Example::
+
+        {
+            "taxonomy": {"MsConsumer": {"CoSyLuigiTask", "Consumer", "TitledConsumer"}, ...},
+            "requires": {"Consumer": ["Source"], "TitledConsumer": ["TitleSource"], "MsConsumer": ["MsTitleSource"]},
+        }
+
+    The taxonomy maps every concrete task to all of its ancestors (as ``repo.taxonomy`` does); abstract
+    classes passed to the repository only appear as ancestors.
     """
     from cosy_luigi import CoSyLuigiTask, CoSyLuigiTaskParameter  # noqa: PLC0415  (avoid import cycle)
 
