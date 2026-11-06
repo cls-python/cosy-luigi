@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>RUNNING</title>
+<!-- Tests for src/cosy_luigi/visualization/assets/grid_router.js; run by test_grid_router.py in a headless
+     browser, but the page can also be opened directly in a browser. The result is put into the title. -->
+<script src="../../src/cosy_luigi/visualization/assets/grid_router.js"></script>
+</head>
+<body>
+<pre id="out"></pre>
+<script>
+const SIDES_SRC = ["E", "N", "S"], SIDES_DST = ["W", "N", "S"];
+const edge = (src, dst, key = `${src}->${dst}`) => ({ key, src, dst, srcSides: SIDES_SRC, dstSides: SIDES_DST });
+const box = (id, x, y, w = 100, h = 40) => ({ id, x, y, w, h });
+
+// ------------------------------------------------------------------ checks
+function sideOf(b, p) {
+  const eq = (a, c) => Math.abs(a - c) < 0.5;
+  if (eq(p[0], b.x + b.w) && p[1] >= b.y && p[1] <= b.y + b.h) return "E";
+  if (eq(p[0], b.x) && p[1] >= b.y && p[1] <= b.y + b.h) return "W";
+  if (eq(p[1], b.y + b.h) && p[0] >= b.x && p[0] <= b.x + b.w) return "S";
+  if (eq(p[1], b.y) && p[0] >= b.x && p[0] <= b.x + b.w) return "N";
+  return null;
+}
+
+// does the axis-parallel segment a-b cross the interior of the box?
+function crosses(a, b, bx) {
+  const x1 = bx.x + 1, x2 = bx.x + bx.w - 1, y1 = bx.y + 1, y2 = bx.y + bx.h - 1;
+  const [lx, hx] = [Math.min(a[0], b[0]), Math.max(a[0], b[0])], [ly, hy] = [Math.min(a[1], b[1]), Math.max(a[1], b[1])];
+  return hx > x1 && lx < x2 && hy > y1 && ly < y2;
+}
+
+function checkRoute(name, pts, boxes, e, errors) {
+  const byId = Object.fromEntries(boxes.map(b => [b.id, b]));
+  if (!pts || pts.length < 2) { errors.push(`${name}: no route`); return; }
+  for (let k = 0; k + 1 < pts.length; k++) {
+    const [a, b] = [pts[k], pts[k + 1]];
+    if (Math.abs(a[0] - b[0]) > 0.01 && Math.abs(a[1] - b[1]) > 0.01) errors.push(`${name}: segment ${k} is not orthogonal`);
+    for (const bx of boxes) if (crosses(a, b, bx)) errors.push(`${name}: segment ${k} crosses ${bx.id}`);
+  }
+  const s = sideOf(byId[e.src], pts[0]), t = sideOf(byId[e.dst], pts[pts.length - 1]);
+  if (!e.srcSides.includes(s)) errors.push(`${name}: start not on an allowed side of ${e.src} (${s})`);
+  if (!e.dstSides.includes(t)) errors.push(`${name}: end not on an allowed side of ${e.dst} (${t})`);
+}
+
+// do segments of two different edges lie on top of each other on the same line?
+function checkNoOverlap(name, routes, errors) {
+  const segs = [];
+  for (const [key, pts] of Object.entries(routes))
+    for (let k = 0; k + 1 < pts.length; k++) segs.push({ key, a: pts[k], b: pts[k + 1] });
+  for (let i = 0; i < segs.length; i++) for (let j = i + 1; j < segs.length; j++) {
+    const [s, t] = [segs[i], segs[j]];
+    if (s.key === t.key) continue;
+    for (const ax of [0, 1]) {
+      const o = 1 - ax;     // ax = fixed coordinate
+      if (Math.abs(s.a[ax] - s.b[ax]) > 0.01 || Math.abs(t.a[ax] - t.b[ax]) > 0.01) continue;
+      if (Math.abs(s.a[ax] - t.a[ax]) > 0.5) continue;
+      const lo = Math.max(Math.min(s.a[o], s.b[o]), Math.min(t.a[o], t.b[o]));
+      const hi = Math.min(Math.max(s.a[o], s.b[o]), Math.max(t.a[o], t.b[o]));
+      if (hi - lo > 1) errors.push(`${name}: ${s.key} and ${t.key} overlap`);
+    }
+  }
+}
+
+// ------------------------------------------------------------------ cases
+const cases = {
+  "side by side: one straight line from right to left"() {
+    const boxes = [box("A", 0, 0), box("B", 200, 0)], e = edge("A", "B"), errors = [];
+    const r = GridRouter.route(boxes, [e]);
+    checkRoute("A->B", r[e.key], boxes, e, errors);
+    if (r[e.key].length !== 2) errors.push(`expected 2 points, got ${r[e.key].length}`);
+    if (sideOf(boxes[0], r[e.key][0]) !== "E") errors.push("preferred side E not used");
+    return errors;
+  },
+  "obstacle in between is avoided"() {
+    const boxes = [box("A", 0, 0), box("X", 200, -20, 100, 80), box("B", 400, 0)], e = edge("A", "B"), errors = [];
+    checkRoute("A->B", GridRouter.route(boxes, [e])[e.key], boxes, e, errors);
+    return errors;
+  },
+  "target left of the source"() {
+    const boxes = [box("A", 400, 0), box("B", 0, 0)], e = edge("A", "B"), errors = [];
+    checkRoute("A->B", GridRouter.route(boxes, [e])[e.key], boxes, e, errors);
+    return errors;
+  },
+  "target one level lower, neighbor in the way"() {
+    const boxes = [box("Ms", 0, 100), box("Mr", 140, 100), box("Jane", 280, 220), box("John", 420, 220),
+                   box("Head", 280, 0)];
+    const es = [edge("Ms", "Jane"), edge("Mr", "John")], errors = [];
+    const r = GridRouter.route(boxes, es);
+    for (const e of es) checkRoute(e.key, r[e.key], boxes, e, errors);
+    checkNoOverlap("titles", r, errors);
+    return errors;
+  },
+  "two edges into the same side: separate ports, no overlap"() {
+    const boxes = [box("A1", 0, 0), box("A2", 0, 100), box("B", 300, 50)];
+    const es = [edge("A1", "B"), edge("A2", "B")], errors = [];
+    const r = GridRouter.route(boxes, es);
+    for (const e of es) checkRoute(e.key, r[e.key], boxes, e, errors);
+    const ends = es.map(e => r[e.key][r[e.key].length - 1]);
+    if (Math.abs(ends[0][0] - ends[1][0]) < 0.5 && Math.abs(ends[0][1] - ends[1][1]) < 0.5)
+      errors.push("both edges end in the same point");
+    checkNoOverlap("two edges", r, errors);
+    return errors;
+  },
+  "long edge across a row (like GetCosts -> OptimizeLots)"() {
+    const boxes = [box("GetCosts", 0, 0), box("GetHistoric", 140, 0), box("Predict", 280, 0), box("Optimize", 600, 0),
+                   box("P1", 200, 100), box("O1", 500, 100), box("O2", 640, 100)];
+    const es = [edge("GetCosts", "Optimize"), edge("GetHistoric", "Predict"), edge("Predict", "Optimize")], errors = [];
+    const r = GridRouter.route(boxes, es);
+    for (const e of es) checkRoute(e.key, r[e.key], boxes, e, errors);
+    checkNoOverlap("lot sizing", r, errors);
+    return errors;
+  },
+  "fractional coordinates after dragging, box squeezed between two others (regression)"() {
+    // rounding the grid coordinates put the start stub slightly inside its own box
+    const boxes = [box("WriteTemplateTask", 551.3333333333333, 190, 138, 33),
+                   box("WriteTitleTemplateTask", 266, 40, 163, 33),
+                   box("WriteMsTitleTemplateTask", 40, 137, 179, 33),
+                   box("WriteMrTitleTemplateTask", 259, 137, 177, 33),
+                   box("SubstituteNameTask", 762.5, 40, 148, 33),
+                   box("SubstituteNameByJohnDoeTask", 476, 137, 215, 33),
+                   box("SubstituteByNameAndTitleTask", 731, 137, 211, 33),
+                   box("SubstituteNameByMsJaneDoeTask", 449.5, 234, 232, 33),
+                   box("SubstituteNameByMrJohnDoeTask", 721.5, 234, 230, 33)];
+    const e = edge("WriteTemplateTask", "SubstituteNameTask"), errors = [];
+    checkRoute(e.key, GridRouter.route(boxes, [e])[e.key], boxes, e, errors);
+    return errors;
+  },
+  "no free path (overlapping boxes): fallback line instead of an error"() {
+    const boxes = [box("A", 0, 0), box("B", 50, 10)], e = edge("A", "B");
+    const r = GridRouter.route(boxes, [e]);
+    return r[e.key] && r[e.key].length >= 2 ? [] : ["no fallback line returned"];
+  },
+};
+
+// ------------------------------------------------------------------ run
+const lines = [], failed = [];
+for (const [name, fn] of Object.entries(cases)) {
+  let errors;
+  try { errors = fn(); } catch (err) { errors = [`exception: ${err && err.stack || err}`]; }
+  lines.push(`${errors.length ? "FAIL" : "ok  "} ${name}`, ...errors.map(e => `       ${e}`));
+  if (errors.length) failed.push(name);
+}
+const total = Object.keys(cases).length;
+document.getElementById("out").textContent = lines.join("\n");
+document.title = failed.length ? `FAIL ${failed.length}/${total}` : `PASS ${total}/${total}`;
+</script>
+</body>
+</html>

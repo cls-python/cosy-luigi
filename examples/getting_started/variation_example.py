@@ -6,11 +6,12 @@ import luigi
 from cosy.maestro import Maestro
 
 from cosy_luigi import CoSyLuigiRepo, CoSyLuigiTask, CoSyLuigiTaskParameter
+from cosy_luigi.visualization import visualize_template
 
 
 class WriteTemplateTask(CoSyLuigiTask):
     def output(self):
-        return {"template": luigi.LocalTarget("hello_world_template.txt")}
+        return {"template": luigi.LocalTarget("output/hello_world_template.txt")}
 
     def run(self):
         with self.output()["template"].open("w") as result:
@@ -22,7 +23,7 @@ class SubstituteNameTask(CoSyLuigiTask, ABC):
     name: str = None
 
     def output(self):
-        return {"filled_template": luigi.LocalTarget(self.__class__.__name__ + "_filled_template.txt")}
+        return {"filled_template": luigi.LocalTarget("output/" + self.__class__.__name__ + "_filled_template.txt")}
 
     def run(self):
         with self.input()["template_task"]["template"].open() as input_template:
@@ -42,6 +43,9 @@ class SubstituteNameByJaneDoeTask(SubstituteNameTask):
 
 def main():
     repo = CoSyLuigiRepo(WriteTemplateTask, SubstituteNameTask)
+
+    visualize_template(repo, "output/variation_example")
+
     maestro = Maestro(repo.cls_repo, repo.taxonomy)
     results = maestro.query(SubstituteNameTask.target())
     luigi.build(results, local_scheduler=True, detailed_summary=True)
