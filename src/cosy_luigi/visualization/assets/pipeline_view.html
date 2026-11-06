@@ -1,0 +1,94 @@
+<!-- Markup and CSS of the web component <pipeline-view> (pipeline_view.js clones this template into
+     its shadow root, so the CSS only applies inside the component). -->
+<template id="pipeline-view-template">
+<style>
+  :host {
+    --bg: #f8f8f9; --panel: #ffffff; --text: #222; --muted: #666; --line: #ddd;
+    --ctrl-border: #eee; --ctrl-icon: #555; --ctrl-hover: #f4f4f4; --ctrl-active: #e6eefa;
+    display: flex; flex-direction: column; position: relative;
+    min-height: 300px; background: var(--bg); color: var(--text);
+    font: 13px Helvetica, Arial, sans-serif;
+  }
+  .stage { flex: 1; min-height: 0; position: relative; }
+  .canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: grab; touch-action: none; }
+  .canvas.panning { cursor: grabbing; }
+  .node { cursor: move; }
+  .node text { pointer-events: none; user-select: none; }
+  .dim { opacity: 0.25; }
+  .error { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); max-width: 70%;
+           padding: 12px 16px; background: var(--panel); border-radius: 4px; color: #a00; display: none;
+           box-shadow: 0 0 2px 1px rgba(0, 0, 0, 0.08); }
+
+  /* Cards floating above the diagram (look inspired by React Flow <Panel>) */
+  .panel { position: absolute; background: var(--panel); border-radius: 4px; color: var(--muted);
+           box-shadow: 0 0 2px 1px rgba(0, 0, 0, 0.08); font-size: 12px; }
+  .legend-panel { left: 15px; top: 15px; display: flex; align-items: center; }
+  .legend-toggle { display: flex; align-items: center; gap: 4px; padding: 6px 10px; border: none; background: none;
+                   font: inherit; color: var(--text); cursor: pointer; }
+  .legend-toggle svg { width: 10px; height: 10px; fill: none; stroke: currentColor; stroke-width: 1.6;
+                       transition: transform 0.15s; }
+  .legend-panel.collapsed .legend-toggle svg { transform: rotate(-90deg); }
+  .legend { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; padding: 6px 12px 6px 10px;
+            border-left: 1px solid var(--ctrl-border); }
+  .legend-panel.collapsed .legend { display: none; }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .legend .box { width: 16px; height: 11px; border-radius: 3px; border: 1.5px solid; }
+  .help-panel { left: 55px; bottom: 15px; padding: 8px 12px; line-height: 1.6; display: none; }
+  .help-panel.open { display: block; }
+  .help-panel b { color: var(--text); font-weight: 600; }
+
+  /* Control bar bottom left (look inspired by React Flow <Controls>) */
+  .controls { position: absolute; left: 15px; bottom: 15px; display: flex; flex-direction: column;
+              background: var(--panel); border-radius: 4px; overflow: hidden;
+              box-shadow: 0 0 2px 1px rgba(0, 0, 0, 0.08); }
+  .controls button { width: 28px; height: 28px; padding: 0; display: flex; align-items: center; justify-content: center;
+                     border: none; border-bottom: 1px solid var(--ctrl-border); background: var(--panel);
+                     color: var(--ctrl-icon); cursor: pointer; }
+  .controls button:last-child { border-bottom: none; }
+  .controls button:hover { background: var(--ctrl-hover); }
+  .controls button[aria-pressed="true"] { background: var(--ctrl-active); color: #2f5ea8; }
+  .controls svg { width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 1.6;
+                  stroke-linecap: round; stroke-linejoin: round; }
+</style>
+<div class="stage">
+  <svg class="canvas" xmlns="http://www.w3.org/2000/svg">
+    <!-- Dot grid: the pattern follows pan/zoom (patternTransform) while the rectangle always fills the
+         whole area, so the grid appears infinite -->
+    <defs><pattern id="grid-dots" class="grid-pattern" patternUnits="userSpaceOnUse" width="20" height="20">
+      <circle class="grid-dot" cx="1" cy="1" r="1"></circle>
+    </pattern></defs>
+    <rect class="grid" width="100%" height="100%" fill="url(#grid-dots)"></rect>
+    <defs class="defs"></defs>
+    <g class="viewport"><g class="edges"></g><g class="nodes"></g></g>
+  </svg>
+  <div class="controls">
+    <button class="btn-zoom-in" title="Zoom in">
+      <svg viewBox="0 0 12 12"><path d="M6 1.5v9M1.5 6h9"/></svg></button>
+    <button class="btn-zoom-out" title="Zoom out">
+      <svg viewBox="0 0 12 12"><path d="M1.5 6h9"/></svg></button>
+    <button class="btn-fit" title="Fit view">
+      <svg viewBox="0 0 12 12"><path d="M1 4V1h3M8 1h3v3M11 8v3H8M4 11H1V8"/></svg></button>
+    <button class="btn-reset" title="Reset layout">
+      <svg viewBox="0 0 12 12"><path d="M2.2 4.2A4.2 4.2 0 1 1 1.8 7"/><path d="M1.6 1.4v3h3"/></svg></button>
+    <button class="btn-snap" title="Snap to grid (hold Shift while dragging to invert)" aria-pressed="true">
+      <svg viewBox="0 0 12 12"><path d="M2 2h.01M6 2h.01M10 2h.01M2 6h.01M6 6h.01M10 6h.01M2 10h.01M6 10h.01M10 10h.01"
+                                     style="stroke-width: 2.4"/></svg></button>
+    <button class="btn-export" title="Export as SVG">
+      <svg viewBox="0 0 12 12"><path d="M6 1.5v6.5M3.2 5.4 6 8.2l2.8-2.8M1.5 10.5h9"/></svg></button>
+    <button class="btn-help" title="Help" aria-pressed="false">
+      <svg viewBox="0 0 12 12"><path d="M4.3 4.3a1.8 1.8 0 1 1 2.4 1.7c-.5.2-.7.6-.7 1.1v.4M6 9.6h.01"/></svg></button>
+  </div>
+  <div class="panel legend-panel">
+    <button class="legend-toggle" title="Show/hide legend">
+      <svg viewBox="0 0 10 10"><path d="M2 3.5 5 6.5 8 3.5"/></svg>Legend</button>
+    <div class="legend"></div>
+  </div>
+  <div class="panel help-panel">
+    <b>Drag a node</b> to move it together with its subclasses; it snaps to the grid<br>
+    <b>Shift</b> while dragging: invert snapping · <b>Alt</b>: move without subclasses<br>
+    <b>Drag the background</b> to pan · <b>mouse wheel</b> to zoom<br>
+    <b>Hover</b> a node to highlight its edges
+  </div>
+  <div class="error"></div>
+</div>
+</template>

@@ -6,6 +6,7 @@ import luigi
 from cosy.maestro import Maestro
 
 from cosy_luigi import CoSyLuigiRepo, CoSyLuigiTask, CoSyLuigiTaskParameter
+from cosy_luigi.visualization import visualize_template
 
 
 class WriteTemplateTask(CoSyLuigiTask):
@@ -41,13 +42,9 @@ class SubstituteNameByJaneDoeTask(SubstituteNameTask):
 
 
 def main():
-    repo = CoSyLuigiRepo(
-        WriteTemplateTask, 
-        SubstituteNameTask
-        )
+    repo = CoSyLuigiRepo(WriteTemplateTask, SubstituteNameTask)
 
-    from cosy_luigi.utils.visualize_template import render_repo_template
-    render_repo_template(repo, "output/variation_example")
+    visualize_template(repo, "output/variation_example")
 
     maestro = Maestro(repo.cls_repo, repo.taxonomy)
     results = maestro.query(SubstituteNameTask.target())

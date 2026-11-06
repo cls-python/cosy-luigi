@@ -14,6 +14,7 @@ from lot_optimizers.silver_meal_heuristic import SilverMeal
 from lot_optimizers.wagner_whitin import WagnerWhitin
 
 from cosy_luigi import CoSyLuigiRepo, CoSyLuigiTask, CoSyLuigiTaskParameter
+from cosy_luigi.visualization import visualize_template
 
 
 class GetCosts(CoSyLuigiTask):
@@ -152,13 +153,6 @@ class OptimizeLotsByPartPeriod(OptimizeLots):
         return optimizer.run(cost, demand)
 
 
-
-
-
-
-
-
-
 if __name__ == "__main__":
     repo = CoSyLuigiRepo(
         GetCosts,
@@ -167,8 +161,7 @@ if __name__ == "__main__":
         OptimizeLots,
     )
 
-    from cosy_luigi.utils.visualize_template import render_repo_template
-    render_repo_template(repo, str(Path(__file__).parent / "data" / "lot_sizing_pipeline"))
+    visualize_template(repo, Path(__file__).parent / "data" / "lot_sizing_pipeline")
 
     print(PredictDemand.get_all_variants())
     maestro = Maestro(repo.cls_repo, repo.taxonomy)
