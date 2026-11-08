@@ -17,16 +17,10 @@ have also 2 concrete implementation, namely `LinearRegression` &
 Lastly we evaluate each regression model by predicting the testing
 target and calculating the root mean squared error.
 
-# Requirements
-
-The example contains a
-[requirements.txt](https://github.com/cls-python/cls-luigi/tree/main/examples/ml_blood_sugar_level/requirements.txt)
-file. To experiment with the example, you can set up your environment by
-executing the following command:
+# Running the Example
 
 ``` bash
-# cd into the ml blood sugar level example folder
-pip install -r requirements.txt
+hatch run ml-blood-sugar-level:run
 ```
 
 # Static Visualization

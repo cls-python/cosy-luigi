@@ -31,6 +31,7 @@ deploy = "properdocs gh-deploy --force --config-file {env:PROPERDOCS_CONFIG} --c
 
 
 [envs.types]
+features = ["cosy"]
 extra-dependencies = [
   "mypy>=1.0.0",
   "pytest>=8.0.0"
@@ -42,7 +43,42 @@ check = "mypy --install-types --non-interactive {args:src/cosy_luigi tests}"
 
 
 [envs.hatch-test]
+features = ["cosy"]
 extra-dependencies = [
   "pytest-benchmark",
   "pytest-cov"
 ]
+
+
+[envs.getting-started]
+
+
+[envs.getting-started.scripts]
+basic = "cd {root}/examples/getting_started && python basic_example.py"
+variation = "cd {root}/examples/getting_started && python variation_example.py"
+console = "cd {root}/examples/getting_started && python console_output_example.py"
+run = ["basic", "variation", "console"]
+
+
+[envs.lot-sizing]
+dependencies = [
+  "pandas",
+  "numpy",
+]
+
+
+[envs.lot-sizing.scripts]
+run = "cd {root}/examples/lot_sizing && python lot_sizing_pipeline.py"
+
+
+[envs.ml-blood-sugar-level]
+dependencies = [
+  "scikit-learn",
+  "skops",
+  "pandas",
+  "numpy",
+]
+
+
+[envs.ml-blood-sugar-level.scripts]
+run = "cd {root}/examples/ml_blood_sugar_level && python ml_blood_sugar_level.py"

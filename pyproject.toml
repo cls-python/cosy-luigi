@@ -23,9 +23,13 @@ classifiers = [
   "Programming Language :: Python :: Implementation :: CPython",
   "Programming Language :: Python :: Implementation :: PyPy",
 ]
-dependencies = [
-    "combinatory-synthesizer==0.0.1.dev29",
-    "luigi==3.8.0"
+dependencies = []
+
+
+[project.optional-dependencies]
+# If installed with cosy-luigi[cosy] everything runs on CoSy by default instead
+cosy = [
+  "combinatory-synthesizer==0.0.1.dev29",
 ]
 
 

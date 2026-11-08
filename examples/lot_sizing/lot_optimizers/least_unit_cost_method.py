@@ -46,8 +46,6 @@ class LeastUnitCostMethod:
             p = j
         total_c += kpj * lg2
         orders[temp] = lg2
-        #   print("Total Cost: " + str(total_c))
-        #        print(sum(orders))
         return np.array(orders)
 
 
@@ -141,4 +139,3 @@ if __name__ == "__main__":
 
     leastunitcostmethod = LeastUnitCostMethod()
     output = leastunitcostmethod.run(dict_in, demand)
-    print(output)

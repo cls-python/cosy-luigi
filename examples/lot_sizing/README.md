@@ -7,16 +7,10 @@ Here we utilized CLS-Luigi to construct demand prediction pipelines for
 lot sizing. The example was built to present CLS-Luigi at the
 [LION17](https://lion17.org/) conference.
 
-# Requirements
-
-The example contains a
-[requirements.txt](https://github.com/cls-python/cls-luigi/tree/main/examples/ny_taxi/requirements.txt)
-file. To experiment with the example, you can set up your environment by
-executing the following command:
+# Running the Example
 
 ``` bash
-# cd into the lot sizing example folder
-pip install -r requirements.txt
+hatch run lot-sizing:run
 ```
 
 # Static Visualization
